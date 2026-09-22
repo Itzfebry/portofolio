@@ -17,9 +17,18 @@ type FlowPath = {
   length: number;
   phase: number;
   drift: number;
+  color: string;
 };
 
 const TAU = Math.PI * 2;
+
+/** Cyan / violet / pink strokes so the flow matches the site palette. */
+const PALETTE = [
+  "103, 232, 249",
+  "167, 139, 250",
+  "249, 168, 212",
+  "147, 197, 253",
+] as const;
 
 function clamp(value: number, minimum: number, maximum: number) {
   return Math.min(maximum, Math.max(minimum, value));
@@ -65,14 +74,15 @@ export default function GatewayFlow({
         length: 18 + Math.random() * 80,
         phase: Math.random() * TAU,
         drift: 0.3 + Math.random() * 0.8,
+        color: PALETTE[index % PALETTE.length],
       }));
     };
 
     const draw = (time: number) => {
       const elapsed = (time - startTime) / 1000;
       const motion = reducedMotion.matches ? 0 : clamp(speed, 0, 3);
-      const centerX = width * 0.68;
-      const centerY = height * 0.46;
+      const centerX = width * 0.5;
+      const centerY = height * 0.44;
       const maxRadius = Math.hypot(width, height) * 0.7;
 
       context.clearRect(0, 0, width, height);
@@ -86,22 +96,17 @@ export default function GatewayFlow({
         const radius = 22 + progress;
         const wave = Math.sin(elapsed * 0.55 + path.phase) * 0.08;
         const angle = path.angle + wave;
-        const x = centerX + Math.cos(angle) * radius;
-        const y = centerY + Math.sin(angle) * radius;
-        const tangent = angle + Math.PI / 2;
-        const segment = path.length * (0.7 + radius / maxRadius);
-        const startX = x - Math.cos(tangent) * segment;
-        const startY = y - Math.sin(tangent) * segment;
-        const alpha = clamp(opacity, 0.05, 1) * (0.08 + radius / maxRadius * 0.22);
+        // arc-length based tail keeps the trail visually consistent at any radius
+        const tail = (path.length * (0.7 + radius / maxRadius)) / Math.max(radius, 1);
+        const alpha = clamp(opacity, 0.05, 1) * (0.08 + (radius / maxRadius) * 0.24);
 
-        context.strokeStyle = `rgba(52, 211, 153, ${alpha})`;
+        context.strokeStyle = `rgba(${path.color}, ${alpha})`;
         context.beginPath();
-        context.moveTo(startX, startY);
-        context.lineTo(x, y);
+        context.arc(centerX, centerY, radius, angle - tail, angle);
         context.stroke();
       }
 
-      context.strokeStyle = `rgba(167, 243, 208, ${clamp(opacity, 0.05, 1) * 0.14})`;
+      context.strokeStyle = `rgba(103, 232, 249, ${clamp(opacity, 0.05, 1) * 0.16})`;
       context.lineWidth = 1;
       context.beginPath();
       context.arc(centerX, centerY, 26 + Math.sin(elapsed * 0.8) * 2, 0, TAU);
