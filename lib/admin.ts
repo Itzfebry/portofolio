@@ -19,3 +19,9 @@ export async function requireAdminSession() {
 
   return { id: "password-admin" };
 }
+
+/** Non-redirecting session check — used by the layout to hide the sidebar. */
+export async function hasAdminSession() {
+  const cookieStore = await cookies();
+  return cookieStore.get(ADMIN_SESSION_COOKIE)?.value === ADMIN_SESSION_VALUE;
+}

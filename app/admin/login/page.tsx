@@ -1,14 +1,39 @@
+import type { Metadata } from "next";
+
 import { LoginForm } from "./LoginForm";
+
+export const metadata: Metadata = {
+  title: { absolute: "ItzFebryHcx | Admin" },
+  robots: { index: false, follow: false },
+};
 
 export default function AdminLoginPage() {
   return (
-    <main className="flex min-h-screen items-center justify-center bg-zinc-950 px-4 py-12 text-white">
-      <div className="w-full max-w-md rounded-3xl border border-zinc-800 bg-zinc-900 p-8 shadow-2xl shadow-zinc-950/60">
-        <p className="text-xs uppercase tracking-[0.32em] text-emerald-400">Akses aman</p>
-        <h1 className="mt-3 text-3xl font-bold">Masuk administrasi</h1>
-        <p className="mt-2 text-sm text-zinc-400">Gunakan kata sandi atau PIN untuk melanjutkan.</p>
+    <main className="hack-terminal">
+      <div className="hack-window">
+        <div className="hack-window__bar">
+          <span className="hack-window__dot" />
+          <span className="hack-window__dot" />
+          <span className="hack-window__dot" />
+          <span className="hack-window__title">secure-access — ssh</span>
+        </div>
 
-        <LoginForm />
+        <div className="hack-window__body">
+          <p className="hack-line">
+            <span className="prompt">$</span>./login.sh --restricted
+          </p>
+          <p className="hack-line hack-line--muted">
+            Sesi dilindungi. Hanya kata sandi yang diterima pada jalur ini.
+          </p>
+
+          <div className="hack-divider" />
+
+          <p className="hack-label" id="secret-label">
+            &gt; masukkan kata sandi
+          </p>
+
+          <LoginForm />
+        </div>
       </div>
     </main>
   );

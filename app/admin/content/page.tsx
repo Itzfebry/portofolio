@@ -26,7 +26,7 @@ export default async function AdminContentPage() {
 
       <section className="rounded-2xl border border-zinc-800 bg-zinc-950/80 p-5">
         <h2 className="text-xl font-semibold">Keahlian</h2>
-        <AdminActionForm action={saveSkill} className="mt-5 grid gap-4 md:grid-cols-4" encType="multipart/form-data">
+        <AdminActionForm action={saveSkill} className="mt-5 grid gap-4 md:grid-cols-4">
           <label className="md:col-span-1">
             <span className="mb-2 block text-sm text-zinc-300">Nama keahlian</span>
             <input name="name" required className="w-full rounded-xl border border-zinc-700 bg-zinc-900 px-3 py-2.5 text-white outline-none focus:border-emerald-400" placeholder="Next.js" />

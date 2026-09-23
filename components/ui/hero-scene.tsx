@@ -4,9 +4,17 @@ import Image from "next/image";
 import { useEffect, useRef, type CSSProperties } from "react";
 
 import GatewayFlow from "@/components/ui/gateway-flow";
+import { LiquidMetalButton } from "@/components/ui/liquid-metal-button";
+import ScrambleText from "@/components/ui/scramble-text";
+import TiltCard from "@/components/ui/tilt-card";
 import type { Profile, SocialLink } from "@/lib/portfolio-data";
 
 type Stat = { value: string; label: string };
+
+const ROLE_TEXT = "Junior Web & Mobile Developer";
+const WHATSAPP_URL = "https://wa.me/6287786445013";
+const ROLE_GRADIENT =
+  "linear-gradient(100deg, #ffffff 0%, #67e8f9 34%, #a78bfa 66%, #f9a8d4 100%)";
 
 type HeroSceneProps = {
   profile: Profile;
@@ -14,11 +22,54 @@ type HeroSceneProps = {
   stats: Stat[];
 };
 
-function ArrowUpRight() {
+function scrollToSection(id: string) {
+  const target = document.getElementById(id);
+  if (!target) return;
+  const reduced = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+  target.scrollIntoView({ behavior: reduced ? "auto" : "smooth", block: "start" });
+}
+
+/**
+ * Splits a line of the name into word groups of animated characters.
+ * `--i` drives the staggered entrance; `--count` lets the accent line map
+ * its gradient across every character of the word.
+ */
+function LineChars({ text }: { text: string }) {
+  let index = 0;
+  const chars = Array.from(text).filter((char) => char.trim() !== "");
+  const count = chars.length;
+
   return (
-    <svg aria-hidden="true" viewBox="0 0 24 24" className="arrow h-4 w-4" fill="none" stroke="currentColor" strokeWidth="1.9">
-      <path strokeLinecap="round" strokeLinejoin="round" d="M7 17 17 7M9 7h8v8" />
-    </svg>
+    <span className="hero__chars" style={{ "--count": String(count) } as CSSProperties}>
+      {text.split(/(\s+)/).map((part, partIndex) =>
+        part.trim() === "" ? (
+          <span key={`gap-${partIndex}`} className="hero__space">
+            {part}
+          </span>
+        ) : (
+          <span key={`word-${partIndex}`} className="hero__word">
+            {Array.from(part).map((char, charIndex) => {
+              const i = index++;
+              const pos = count > 1 ? (i * 100) / (count - 1) : 0;
+              return (
+                <span
+                  key={`char-${partIndex}-${charIndex}`}
+                  className="hero__char"
+                  style={
+                    {
+                      "--i": String(i),
+                      "--pos": `${pos.toFixed(2)}%`,
+                    } as CSSProperties
+                  }
+                >
+                  <span className="hero__char-in">{char}</span>
+                </span>
+              );
+            })}
+          </span>
+        ),
+      )}
+    </span>
   );
 }
 
@@ -95,6 +146,12 @@ export default function HeroScene({ profile, socialLinks, stats }: HeroSceneProp
   const lastName = words.length > 1 ? (words.pop() as string) : words[0];
   const firstName = words.join(" ") || lastName;
 
+  // Show the profile role as a static prefix only when it adds information
+  // (i.e. it is not the very same text the decode animation resolves into).
+  const roleLabel = profile.role.trim();
+  const showRolePrefix =
+    roleLabel.length > 0 && roleLabel.toLowerCase() !== ROLE_TEXT.toLowerCase();
+
   return (
     <section id="top" ref={sectionRef} className="hero">
       <div className="hero__backdrop" aria-hidden="true">
@@ -114,16 +171,33 @@ export default function HeroScene({ profile, socialLinks, stats }: HeroSceneProp
           </p>
 
           <h1 className="hero__title">
-            <span className="hero__line">
-              <span style={{ "--d": "0.18s" } as CSSProperties}>{firstName}</span>
+            <span className="hero__line" style={{ "--base": "0.16s" } as CSSProperties}>
+              <LineChars text={firstName} />
             </span>
-            <span className="hero__line hero__line--accent">
-              <span style={{ "--d": "0.34s" } as CSSProperties}>{lastName}</span>
+            <span
+              className="hero__line hero__line--accent"
+              style={{ "--base": "0.34s" } as CSSProperties}
+            >
+              <LineChars text={lastName} />
             </span>
           </h1>
 
           <p className="hero__role hero-anim" style={{ "--d": "0.6s" } as CSSProperties}>
-            <strong>{profile.role}</strong> — Junior Web &amp; Mobile Developer
+            {showRolePrefix ? (
+              <>
+                <strong>{roleLabel}</strong>
+                <span className="role-sep" aria-hidden="true">
+                  —
+                </span>
+              </>
+            ) : null}
+            <ScrambleText
+              className="role-decode"
+              text={ROLE_TEXT}
+              delay={950}
+              speed={38}
+              gradient={ROLE_GRADIENT}
+            />
           </p>
 
           <p className="hero__lead hero-anim" style={{ "--d": "0.72s" } as CSSProperties}>
@@ -132,20 +206,32 @@ export default function HeroScene({ profile, socialLinks, stats }: HeroSceneProp
           </p>
 
           <div className="hero__cta hero-anim" style={{ "--d": "0.84s" } as CSSProperties}>
-            <a href="#projects" className="btn btn-primary">
-              View my projects <ArrowUpRight />
-            </a>
-            <a href="#contact" className="btn btn-ghost">
-              Contact me
-            </a>
+            <LiquidMetalButton
+              label="View my projects"
+              variant="light"
+              onClick={() => scrollToSection("projects")}
+            />
+            <LiquidMetalButton
+              label="Contact me"
+              labelColor="#ffffff"
+              labelWeight={700}
+              onClick={() => window.open(WHATSAPP_URL, "_blank", "noopener,noreferrer")}
+            />
           </div>
 
           <div className="hero__stats hero-anim" style={{ "--d": "0.96s" } as CSSProperties}>
-            {stats.map((stat) => (
-              <div key={stat.label} className="stat">
-                <p className="stat__value">{stat.value}</p>
+            {stats.map((stat, index) => (
+              <TiltCard key={stat.label} className="stat" max={12}>
+                <p className="stat__value">
+                  <ScrambleText
+                    text={stat.value}
+                    delay={1150 + index * 220}
+                    speed={75}
+                    gradient="linear-gradient(120deg, #ffffff 0%, #67e8f9 100%)"
+                  />
+                </p>
                 <p className="stat__label">{stat.label}</p>
-              </div>
+              </TiltCard>
             ))}
           </div>
 

@@ -1,6 +1,9 @@
 "use client";
 
+import Image from "next/image";
 import { useEffect, useState } from "react";
+
+import { LiquidMetalButton } from "@/components/ui/liquid-metal-button";
 
 const LINKS = [
   { id: "about", label: "About" },
@@ -53,7 +56,13 @@ export default function SiteNav({ email }: { email: string }) {
     <header className={`site-nav ${scrolled ? "is-scrolled" : ""} ${open ? "is-open" : ""}`}>
       <div className="site-nav__bar">
         <a href="#top" className="site-nav__brand" onClick={() => setOpen(false)}>
-          <span className="site-nav__mark" aria-hidden="true" />
+          <Image
+            src="/images/favcion.png"
+            alt=""
+            width={48}
+            height={48}
+            className="site-nav__mark"
+          />
           Portfolio
         </a>
 
@@ -65,10 +74,14 @@ export default function SiteNav({ email }: { email: string }) {
           ))}
         </nav>
 
-        <div className="site-nav__actions">
-          <a href={`mailto:${email}`} className="btn btn-primary btn-sm">
-            Let&apos;s talk
-          </a>
+        {/* <div className="site-nav__actions">
+          <LiquidMetalButton
+            label="Let's talk"
+            variant="light"
+            onClick={() => {
+              window.location.href = `mailto:${email}`;
+            }}
+          />
           <button
             type="button"
             className="site-nav__toggle"
@@ -79,7 +92,7 @@ export default function SiteNav({ email }: { email: string }) {
             <span />
             <span />
           </button>
-        </div>
+        </div> */}
       </div>
 
       <div className="site-nav__progress" style={{ transform: `scaleX(${progress})` }} />

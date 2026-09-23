@@ -1,43 +1,77 @@
-import Link from "next/link";
+import type { Metadata } from "next";
+
+import AdminNav from "@/components/ui/admin-nav";
+import MatrixRain from "@/components/ui/matrix-rain";
+import { hasAdminSession } from "@/lib/admin";
 
 import { signOutAdmin } from "./actions";
+import "./admin.css";
 
-export default function AdminLayout({ children }: { children: React.ReactNode }) {
+export const metadata: Metadata = {
+  title: { absolute: "ItzFebryHcx | Admin" },
+  description: "Secure administration console for the ItzFebryHcx portfolio.",
+  robots: { index: false, follow: false },
+};
+
+function Backdrop() {
   return (
-    <div className="min-h-screen bg-zinc-950 text-white">
-      <div className="mx-auto flex max-w-7xl flex-col gap-8 px-4 py-8 lg:flex-row">
-        <aside className="w-full rounded-2xl border border-zinc-800 bg-zinc-900/80 p-6 lg:max-w-xs">
-          <div className="mb-8">
-            <p className="text-xs uppercase tracking-[0.24em] text-emerald-400">Portfolio</p>
-            <h1 className="mt-2 text-2xl font-bold">Administrasi</h1>
+    <>
+      <MatrixRain className="hack-rain" />
+      <div className="hack-scanlines" aria-hidden="true" />
+      <div className="hack-vignette" aria-hidden="true" />
+    </>
+  );
+}
+
+export default async function AdminLayout({ children }: { children: React.ReactNode }) {
+  const authenticated = await hasAdminSession();
+
+  // No session yet (login page, or first visit): render a bare terminal.
+  if (!authenticated) {
+    return (
+      <div className="admin-hack admin-hack--auth">
+        <Backdrop />
+        <div className="hack-bare">{children}</div>
+      </div>
+    );
+  }
+
+  return (
+    <div className="admin-hack">
+      <Backdrop />
+
+      <div className="hack-shell">
+        <aside className="hack-side">
+          <div className="hack-brand">
+            <span className="hack-brand__mark" aria-hidden="true">
+              ▮
+            </span>
+            <div>
+              <p className="hack-brand__name">ItzFebryHcx</p>
+              <p className="hack-brand__path">portfolio ~/admin</p>
+            </div>
           </div>
 
-          <nav className="space-y-2 text-sm text-zinc-300">
-            <Link className="block rounded-xl border border-zinc-800 px-3 py-2 transition hover:border-emerald-400 hover:text-white" href="/admin">
-              Ringkasan
-            </Link>
-            <Link className="block rounded-xl border border-zinc-800 px-3 py-2 transition hover:border-emerald-400 hover:text-white" href="/admin/projects">
-              Proyek
-            </Link>
-            <Link className="block rounded-xl border border-zinc-800 px-3 py-2 transition hover:border-emerald-400 hover:text-white" href="/admin/content">
-              Konten
-            </Link>
-            <Link className="block rounded-xl border border-zinc-800 px-3 py-2 transition hover:border-emerald-400 hover:text-white" href="/admin/settings">
-              Pengaturan
-            </Link>
-          </nav>
+          <AdminNav />
 
-          <form action={signOutAdmin} className="mt-10">
-            <button
-              type="submit"
-              className="w-full rounded-xl bg-emerald-500 px-4 py-2 font-medium text-slate-950 transition hover:bg-emerald-400"
-            >
-              Keluar
-            </button>
-          </form>
+          <div className="hack-side__foot">
+            <span className="hack-status">
+              <i aria-hidden="true" />
+              session online
+            </span>
+            <form action={signOutAdmin}>
+              <button type="submit" className="hack-btn hack-btn--danger">
+                ./logout.sh
+              </button>
+            </form>
+          </div>
         </aside>
 
-        <main className="flex-1 rounded-2xl border border-zinc-800 bg-zinc-900/80 p-6 shadow-2xl shadow-zinc-950/50">
+        <main className="hack-main">
+          <div className="hack-topbar">
+            <span className="hack-topbar__path">admin console</span>
+            <span className="hack-topbar__secure">encrypted channel</span>
+          </div>
           {children}
         </main>
       </div>

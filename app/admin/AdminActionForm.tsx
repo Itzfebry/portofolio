@@ -16,14 +16,15 @@ export function AdminActionForm({
   className,
   confirmMessage,
   buttonLabel = "Simpan",
-  encType,
 }: {
   action: AdminAction;
   children: React.ReactNode;
   className?: string;
   confirmMessage?: string;
   buttonLabel?: string;
-  encType?: "application/x-www-form-urlencoded" | "multipart/form-data" | "text/plain";
+  // NOTE: no encType/method here — React builds the FormData itself for
+  // function actions (file inputs are always included) and warns if either
+  // attribute is specified.
 }) {
   const router = useRouter();
   const [state, formAction, isPending] = useActionState<AdminSaveState, FormData>(
@@ -48,7 +49,6 @@ export function AdminActionForm({
         }
       }}
       className={className}
-      encType={encType}
     >
       {children}
       <button

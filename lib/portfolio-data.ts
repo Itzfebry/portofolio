@@ -83,33 +83,27 @@ const DEFAULT_PROFILE: Profile = {
 };
 
 const DEFAULT_SKILLS: Skill[] = [
-  { id: "skill-js", name: "JavaScript (ES6+)", category: "Programming Language", level: 95, image_url: "https://cdn.simpleicons.org/javascript" },
-  { id: "skill-html", name: "HTML5", category: "Web Fundamentals", level: 94, image_url: "https://cdn.simpleicons.org/html5" },
-  { id: "skill-css", name: "CSS3", category: "Web Fundamentals", level: 94, image_url: "https://cdn.simpleicons.org/css3" },
-  { id: "skill-ts", name: "TypeScript", category: "Programming Language", level: 92, image_url: "https://cdn.simpleicons.org/typescript" },
-  { id: "skill-react", name: "React.js", category: "Frontend Library", level: 95, image_url: "https://cdn.simpleicons.org/react" },
   { id: "skill-next", name: "Next.js", category: "Frontend Framework", level: 93, image_url: "https://cdn.simpleicons.org/nextdotjs/white" },
-  { id: "skill-tailwind", name: "Tailwind CSS", category: "Styling", level: 92, image_url: "https://cdn.simpleicons.org/tailwindcss" },
-  { id: "skill-git", name: "Git", category: "Tools", level: 88, image_url: "https://cdn.simpleicons.org/git" },
-  { id: "skill-github", name: "GitHub", category: "Platform", level: 90, image_url: "https://cdn.simpleicons.org/github/white" },
-  { id: "skill-figma", name: "Figma", category: "Design", level: 84, image_url: "https://cdn.simpleicons.org/figma" },
-  { id: "skill-vscode", name: "VS Code", category: "Editor", level: 94, image_url: "https://cdn.simpleicons.org/visualstudiocode" },
-  { id: "skill-vercel", name: "Vercel", category: "Deployment", level: 89, image_url: "https://cdn.simpleicons.org/vercel/white" },
+  { id: "skill-laravel", name: "Laravel", category: "Backend Framework", level: 88, image_url: "https://cdn.simpleicons.org/laravel" },
+  { id: "skill-flutter", name: "Flutter", category: "Mobile Framework", level: 87, image_url: "https://cdn.simpleicons.org/flutter" },
+  { id: "skill-mysql", name: "MySQL", category: "Database", level: 85, image_url: "https://cdn.simpleicons.org/mysql" },
+  { id: "skill-supabase", name: "Supabase", category: "Backend Platform", level: 86, image_url: "https://cdn.simpleicons.org/supabase" },
+  { id: "skill-git", name: "Git", category: "Version Control", level: 88, image_url: "https://cdn.simpleicons.org/git" },
+  { id: "skill-ts", name: "TypeScript", category: "Programming Language", level: 90, image_url: "https://cdn.simpleicons.org/typescript" },
+  { id: "skill-js", name: "JavaScript", category: "Programming Language", level: 92, image_url: "https://cdn.simpleicons.org/javascript" },
+  { id: "skill-php", name: "PHP", category: "Programming Language", level: 85, image_url: "https://cdn.simpleicons.org/php" },
 ];
 
 const DEFAULT_SKILL_IMAGES: Record<string, string> = {
-  "JavaScript (ES6+)": "https://cdn.simpleicons.org/javascript",
-  HTML5: "https://cdn.simpleicons.org/html5",
-  CSS3: "https://cdn.simpleicons.org/css3",
-  TypeScript: "https://cdn.simpleicons.org/typescript",
-  "React.js": "https://cdn.simpleicons.org/react",
   "Next.js": "https://cdn.simpleicons.org/nextdotjs/white",
-  "Tailwind CSS": "https://cdn.simpleicons.org/tailwindcss",
+  Laravel: "https://cdn.simpleicons.org/laravel",
+  Flutter: "https://cdn.simpleicons.org/flutter",
+  MySQL: "https://cdn.simpleicons.org/mysql",
+  Supabase: "https://cdn.simpleicons.org/supabase",
   Git: "https://cdn.simpleicons.org/git",
-  GitHub: "https://cdn.simpleicons.org/github/white",
-  Figma: "https://cdn.simpleicons.org/figma",
-  "VS Code": "https://cdn.simpleicons.org/visualstudiocode",
-  Vercel: "https://cdn.simpleicons.org/vercel/white",
+  TypeScript: "https://cdn.simpleicons.org/typescript",
+  JavaScript: "https://cdn.simpleicons.org/javascript",
+  PHP: "https://cdn.simpleicons.org/php",
 };
 
 const DEFAULT_PROJECTS: Project[] = [

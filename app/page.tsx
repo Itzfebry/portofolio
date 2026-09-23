@@ -1,6 +1,6 @@
 /* eslint-disable @next/next/no-img-element */
-import type { CSSProperties } from "react";
-
+import { Mail, Share2 } from "lucide-react";
+import { GithubIcon, InstagramIcon, LinkedinIcon } from "@/components/ui/brand-icons";
 import HeroScene from "@/components/ui/hero-scene";
 import LiquidGlassShell from "@/components/ui/liquid-glass-shell";
 import Reveal from "@/components/ui/reveal";
@@ -10,9 +10,9 @@ import { getPortfolioData } from "@/lib/portfolio-data";
 
 export const dynamic = "force-dynamic";
 
-function ArrowUpRight() {
+function ArrowUpRight({ className = "arrow h-4 w-4" }: { className?: string }) {
   return (
-    <svg aria-hidden="true" viewBox="0 0 24 24" className="arrow h-4 w-4" fill="none" stroke="currentColor" strokeWidth="1.9">
+    <svg aria-hidden="true" viewBox="0 0 24 24" className={className} fill="none" stroke="currentColor" strokeWidth="1.9">
       <path strokeLinecap="round" strokeLinejoin="round" d="M7 17 17 7M9 7h8v8" />
     </svg>
   );
@@ -33,10 +33,29 @@ export default async function Home() {
     { value: `${data.skills.length}`, label: "Technologies" },
   ];
 
-  const marqueeItems = [
-    ...data.skills.map((skill) => skill.name),
-    ...data.projects.map((project) => project.title),
-    ...data.services.map((service) => service.title),
+  const findSocial = (name: string) =>
+    data.socialLinks.find(
+      (item) =>
+        item.label.toLowerCase() === name.toLowerCase() ||
+        item.platform.toLowerCase() === name.toLowerCase(),
+    );
+
+  const contactSocials = [
+    {
+      label: "GitHub",
+      url: findSocial("GitHub")?.url ?? "https://github.com/Itzfebry",
+      Icon: GithubIcon,
+    },
+    {
+      label: "Instagram",
+      url: findSocial("Instagram")?.url ?? "https://www.instagram.com/mginatafebry_",
+      Icon: InstagramIcon,
+    },
+    {
+      label: "LinkedIn",
+      url: findSocial("LinkedIn")?.url ?? "https://linkedin.com",
+      Icon: LinkedinIcon,
+    },
   ];
 
   return (
@@ -47,30 +66,15 @@ export default async function Home() {
         <main className="relative text-white">
           <HeroScene profile={data.profile} socialLinks={data.socialLinks} stats={stats} />
 
-          {/* ---------------------------------------------------- marquee */}
-          <div className="marquee" aria-hidden="true">
-            <div className="marquee__track">
-              {[0, 1].map((copy) => (
-                <div key={copy} className="flex shrink-0 gap-10 pr-10">
-                  {marqueeItems.map((item, index) => (
-                    <span key={`${copy}-${index}`} className="marquee__item">
-                      {item}
-                    </span>
-                  ))}
-                </div>
-              ))}
-            </div>
-          </div>
-
           {/* ------------------------------------------------------ about */}
           <section id="about" className="section">
             <div className="section-head">
               <div>
                 <p className="section-index">01 — About</p>
                 <h2 className="section-title">
-                  Thoughtful digital experiences,
+                  Who am i?
                   <br />
-                  built to <span className="gradient-text">last</span>.
+                   Something about <span className="gradient-text">me</span>.
                 </h2>
               </div>
               <p className="section-note">Who I am &amp; how I work</p>
@@ -126,9 +130,9 @@ export default async function Home() {
           <section id="skills" className="section">
             <div className="section-head">
               <div>
-                <p className="section-index">02 — Capabilities</p>
+                <p className="section-index">02 — Skills</p>
                 <h2 className="section-title">
-                  Tools of the <span className="gradient-text">craft</span>.
+                  My Tools <span className="gradient-text">craft</span>.
                 </h2>
               </div>
               <p className="section-note">{data.skills.length} technologies</p>
@@ -151,10 +155,6 @@ export default async function Home() {
                           <p className="truncate font-medium">{skill.name}</p>
                           <p className="mt-1 text-xs text-zinc-500">{skill.category}</p>
                         </div>
-                        <span className="font-mono text-xs text-zinc-500">{skill.level}%</span>
-                      </div>
-                      <div className="bar">
-                        <span style={{ "--level": `${skill.level}%` } as CSSProperties} />
                       </div>
                     </div>
                   </TiltCard>
@@ -167,9 +167,9 @@ export default async function Home() {
           <section id="projects" className="section">
             <div className="section-head">
               <div>
-                <p className="section-index">03 — Selected work</p>
+                <p className="section-index">03 — Projects</p>
                 <h2 className="section-title">
-                  Projects with <span className="gradient-text">purpose</span>.
+                  What i have <span className="gradient-text">done</span>.
                 </h2>
               </div>
               <p className="section-note">{data.projects.length} case studies</p>
@@ -239,7 +239,7 @@ export default async function Home() {
               <div>
                 <p className="section-index">04 — Experience</p>
                 <h2 className="section-title">
-                  A considered <span className="gradient-text">approach</span>.
+                  My <span className="gradient-text"> Experience. </span>
                 </h2>
               </div>
               <p className="section-note">{data.experiences.length} roles</p>
@@ -277,35 +277,80 @@ export default async function Home() {
               <div className="glass rgb-ring contact-panel">
                 <div className="contact-panel__glow" aria-hidden="true" />
 
-                <div className="relative grid gap-10 md:grid-cols-2 md:items-end">
-                  <div>
-                    <p className="section-index">05 — Contact</p>
-                    <h2 className="section-title mt-6">
-                      Let&apos;s build something
-                      <br className="hidden sm:block" /> <span className="gradient-text">together</span>.
-                    </h2>
-                    <p className="mt-5 max-w-md text-zinc-400">
-                      Have a project in mind or want to say hello? I&apos;d love to hear from you.
-                    </p>
-                    <div className="mt-8 flex items-center gap-2.5 text-sm text-zinc-400">
-                      <span className="pulse-dot" aria-hidden="true" />
-                      Available for new opportunities
-                    </div>
+                <div className="contact-grid">
+                  <div className="contact-copy">
+                    <Reveal delay={80} y={20}>
+                      <p className="section-index">05 — Contact</p>
+                      <h2 className="section-title mt-6">
+                        Let&apos;s build 
+                        <br className="hidden sm:block" /> <span className="gradient-text">together</span>.
+                      </h2>
+                    </Reveal>
+
+                    <Reveal delay={170} y={20}>
+                      <p className="contact-lead">
+                        Terbuka untuk kolaborasi, peluang kerja, anda bisa menghubungi saya melalui email atau sosial media yang tersedia.
+                      </p>
+                    </Reveal>
+
+                    <Reveal delay={250} y={20}>
+                      <p className="contact-status">
+                        <span className="contact-status__emoji" aria-hidden="true">
+                          🟢
+                        </span>
+                        Avaible for work
+                      </p>
+                    </Reveal>
                   </div>
 
-                  <div className="md:justify-self-end">
-                    <a className="mail-link" href={`mailto:${data.profile.email}`}>
-                      {data.profile.email}
-                      <ArrowUpRight />
-                    </a>
-                    <div className="socials mt-7 md:justify-end">
-                      {data.socialLinks.map((link) => (
-                        <a key={link.id} href={link.url} target="_blank" rel="noreferrer" className="social-link">
-                          {link.label}
-                          <ArrowUpRight />
-                        </a>
-                      ))}
-                    </div>
+                  <div className="contact-cards">
+                    <Reveal delay={220} y={24}>
+                      <div className="contact-card">
+                        <span className="contact-card__icon" aria-hidden="true">
+                          <Mail size={18} strokeWidth={1.8} />
+                        </span>
+                        <div className="contact-card__body">
+                          <p className="contact-card__label">EMAIL</p>
+                          <a
+                            className="contact-card__value"
+                            href={`mailto:${data.profile.email}`}
+                          >
+                            {data.profile.email}
+                          </a>
+                        </div>
+                      </div>
+                    </Reveal>
+
+                    <Reveal delay={310} y={24}>
+                      <div className="contact-card">
+                        <span
+                          className="contact-card__icon contact-card__icon--violet"
+                          aria-hidden="true"
+                        >
+                          <Share2 size={18} strokeWidth={1.8} />
+                        </span>
+                        <div className="contact-card__body">
+                          <p className="contact-card__label">TERHUBUNG</p>
+                          <div className="contact-socials">
+                            {contactSocials.map(({ label, url, Icon }) => (
+                              <a
+                                key={label}
+                                href={url}
+                                target="_blank"
+                                rel="noreferrer"
+                                className="contact-social"
+                              >
+                                <span className="contact-social__icon" aria-hidden="true">
+                                  <Icon size={15} />
+                                </span>
+                                {label}
+                                <ArrowUpRight className="contact-social__arrow h-3.5 w-3.5" />
+                              </a>
+                            ))}
+                          </div>
+                        </div>
+                      </div>
+                    </Reveal>
                   </div>
                 </div>
               </div>
