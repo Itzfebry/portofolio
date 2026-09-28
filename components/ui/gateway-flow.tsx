@@ -57,6 +57,14 @@ export default function GatewayFlow({
     let height = 0;
     let paths: FlowPath[] = [];
     let startTime = performance.now();
+    // The loop holds the last frame (zero canvas work) while the page is
+    // scrolling or the canvas is off-screen — drawing a viewport-sized
+    // canvas every frame competes with the compositor and stutters the
+    // scroll. startTime is shifted on resume so the flow continues
+    // seamlessly from where it froze.
+    let pausedAt = 0;
+    let inView = true;
+    let dirty = true;
 
     const resize = () => {
       const bounds = canvas.getBoundingClientRect();
@@ -76,9 +84,28 @@ export default function GatewayFlow({
         drift: 0.3 + Math.random() * 0.8,
         color: PALETTE[index % PALETTE.length],
       }));
+      dirty = true;
     };
 
     const draw = (time: number) => {
+      const root = document.documentElement;
+      // `is-scrolling` holds the last frame while the page is scrolling.
+      // `is-hero-covered` holds it once the About sheet has fully covered the
+      // hero: the hero is pinned by <ScrollFx /> and therefore never scrolls
+      // out of the viewport, so the IntersectionObserver below still reports
+      // it as visible and the canvas would keep repainting a viewport-sized
+      // surface for the rest of the page behind an opaque sheet.
+      const held = root.classList.contains("is-scrolling") || root.classList.contains("is-hero-covered");
+      if (held || !inView || (reducedMotion.matches && !dirty)) {
+        if (!pausedAt) pausedAt = time;
+        animationFrame = requestAnimationFrame(draw);
+        return;
+      }
+      if (pausedAt) {
+        startTime += time - pausedAt;
+        pausedAt = 0;
+      }
+      dirty = false;
       const elapsed = (time - startTime) / 1000;
       const motion = reducedMotion.matches ? 0 : clamp(speed, 0, 3);
       const centerX = width * 0.5;
@@ -118,6 +145,10 @@ export default function GatewayFlow({
 
     const observer = new ResizeObserver(resize);
     observer.observe(canvas);
+    const visibility = new IntersectionObserver((entries) => {
+      inView = entries.some((entry) => entry.isIntersecting);
+    });
+    visibility.observe(canvas);
     resize();
     animationFrame = requestAnimationFrame((time) => {
       startTime = time;
@@ -126,6 +157,7 @@ export default function GatewayFlow({
 
     return () => {
       observer.disconnect();
+      visibility.disconnect();
       cancelAnimationFrame(animationFrame);
     };
   }, [density, opacity, speed, strokeWidth]);

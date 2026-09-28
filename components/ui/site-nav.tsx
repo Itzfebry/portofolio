@@ -1,7 +1,7 @@
 "use client";
 
 import Image from "next/image";
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 
 import { LiquidMetalButton } from "@/components/ui/liquid-metal-button";
 
@@ -13,41 +13,104 @@ const LINKS = [
   { id: "contact", label: "Contact" },
 ];
 
+/** A link becomes active once its top edge is this far above the viewport top. */
+const ACTIVE_OFFSET = 160;
+const SCROLLED_AT = 24;
+
 export default function SiteNav({ email }: { email: string }) {
   const [active, setActive] = useState("");
   const [open, setOpen] = useState(false);
   const [scrolled, setScrolled] = useState(false);
-  const [progress, setProgress] = useState(0);
+
+  const barRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
+    // Scrolling must not re-render React, and must not force layout.
+    //
+    // Previously every animation frame committed a new <SiteNav> render
+    // (setProgress with a fresh float), read document scrollHeight /
+    // clientHeight, then called getBoundingClientRect() once per section.
+    // That is a forced synchronous layout per frame, interleaved with the
+    // transform <ScrollFx /> writes on the hero, so the main thread spent
+    // every frame in style -> layout and the compositor starved.
+    //
+    // Now: geometry is measured once (and on resize / content resize), the
+    // per-frame work is pure arithmetic, and the progress bar is driven by
+    // writing `transform` straight to the node. React only re-renders when
+    // `active` or `scrolled` actually change — i.e. a handful of times per
+    // page, not 60 times per second.
+    const bar = barRef.current;
+
     let frame = 0;
+    let maxScroll = 0;
+    let sectionTops: number[] = [];
+    let lastProgress = -1;
+    let lastActive = "";
+    let lastScrolled = false;
+
+    const measure = () => {
+      const doc = document.documentElement;
+      maxScroll = Math.max(0, doc.scrollHeight - doc.clientHeight);
+      sectionTops = LINKS.map((link) => {
+        const section = document.getElementById(link.id);
+        if (!section) return Number.POSITIVE_INFINITY;
+        return section.getBoundingClientRect().top + window.scrollY;
+      });
+    };
 
     const update = () => {
       frame = 0;
-      const doc = document.documentElement;
-      const max = doc.scrollHeight - doc.clientHeight;
-      setProgress(max > 0 ? Math.min(1, doc.scrollTop / max) : 0);
-      setScrolled(doc.scrollTop > 24);
+      const scrollY = window.scrollY;
 
-      let current = "";
-      for (const link of LINKS) {
-        const section = document.getElementById(link.id);
-        if (section && section.getBoundingClientRect().top <= 160) current = link.id;
+      // Progress: compositor-only `transform`, no layout, no React.
+      const progress = maxScroll > 0 ? Math.min(1, scrollY / maxScroll) : 0;
+      if (bar && Math.abs(progress - lastProgress) > 0.0005) {
+        lastProgress = progress;
+        bar.style.transform = `scaleX(${progress.toFixed(4)})`;
       }
-      setActive(current);
+
+      // Active section from cached offsets — no getBoundingClientRect().
+      let current = "";
+      for (let index = 0; index < sectionTops.length; index += 1) {
+        if (sectionTops[index] - scrollY <= ACTIVE_OFFSET) current = LINKS[index].id;
+      }
+      if (current !== lastActive) {
+        lastActive = current;
+        setActive(current);
+      }
+
+      const isScrolled = scrollY > SCROLLED_AT;
+      if (isScrolled !== lastScrolled) {
+        lastScrolled = isScrolled;
+        setScrolled(isScrolled);
+      }
     };
 
-    const onScroll = () => {
+    const schedule = () => {
       if (!frame) frame = requestAnimationFrame(update);
     };
 
+    const remeasure = () => {
+      measure();
+      lastProgress = -1; // force a progress write at the new scale
+      update();
+    };
+
+    measure();
     update();
-    window.addEventListener("scroll", onScroll, { passive: true });
-    window.addEventListener("resize", onScroll);
+
+    window.addEventListener("scroll", schedule, { passive: true });
+    window.addEventListener("resize", remeasure, { passive: true });
+
+    // Section heights change with font loading, late images and reflow, and
+    // window `resize` does not fire for any of those.
+    const resizeObserver = new ResizeObserver(remeasure);
+    resizeObserver.observe(document.body);
 
     return () => {
-      window.removeEventListener("scroll", onScroll);
-      window.removeEventListener("resize", onScroll);
+      window.removeEventListener("scroll", schedule);
+      window.removeEventListener("resize", remeasure);
+      resizeObserver.disconnect();
       if (frame) cancelAnimationFrame(frame);
     };
   }, []);
@@ -85,9 +148,9 @@ export default function SiteNav({ email }: { email: string }) {
           <button
             type="button"
             className="site-nav__toggle"
-            aria-label="Toggle navigation"
-            aria-expanded={open}
             onClick={() => setOpen((value) => !value)}
+            aria-expanded={open}
+            aria-label="Toggle navigation"
           >
             <span />
             <span />
@@ -95,7 +158,10 @@ export default function SiteNav({ email }: { email: string }) {
         </div> */}
       </div>
 
-      <div className="site-nav__progress" style={{ transform: `scaleX(${progress})` }} />
+      {/* Driven imperatively from the scroll loop above: a CSS transition here
+          would be restarted on every frame and could never settle, which is
+          what made the bar lag behind the scroll position. */}
+      <div className="site-nav__progress" ref={barRef} />
 
       {open && (
         <nav className="site-nav__mobile" aria-label="Mobile sections">

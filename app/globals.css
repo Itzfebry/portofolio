@@ -28,6 +28,7 @@
 
 html {
   scroll-behavior: smooth;
+  scroll-padding-top: 6.5rem;
   scrollbar-width: thin;
   scrollbar-color: rgba(255, 255, 255, .16) transparent;
 }
@@ -70,7 +71,7 @@ img { display: block; max-width: 100%; }
   position: relative;
   isolation: isolate;
   min-height: 100vh;
-  overflow: hidden;
+  overflow: clip;
   background:
     radial-gradient(ellipse 50% 35% at 12% 2%, rgba(103, 232, 249, .07), transparent 65%),
     radial-gradient(ellipse 45% 35% at 88% 16%, rgba(167, 139, 250, .07), transparent 65%),
@@ -296,6 +297,11 @@ img { display: block; max-width: 100%; }
   to { opacity: 1; transform: none; }
 }
 
+/* The scroll loop in <SiteNav /> writes `transform: scaleX(...)` to this node
+   every frame. It carries no transition on purpose: a transition would be
+   restarted by every one of those writes and could never settle, so the bar
+   permanently lagged behind the scroll position. The per-frame write is a
+   compositor-only transform, which is already smooth. */
 .site-nav__progress {
   height: 2px;
   margin: .45rem auto 0;
@@ -305,19 +311,59 @@ img { display: block; max-width: 100%; }
   box-shadow: 0 0 14px rgba(103, 232, 249, .55);
   transform-origin: left center;
   transform: scaleX(0);
-  transition: transform .18s linear;
+  will-change: transform;
 }
 
 /* ------------------------------------------------------------------- hero */
 
+/* No `will-change` on the hero: the pin is now a sticky offset written by
+   <ScrollFx /> through `--hero-pin-top`, not a transform, so there is no
+   per-frame mutation to hint at — and a permanent hint here would pin a
+   full-viewport composited layer for every visitor, including
+   prefers-reduced-motion ones who never freeze the hero at all. */
 .hero {
   position: relative;
-  padding: 8.5rem 1.25rem 4.5rem;
+  padding: 8.5rem 1.25rem 3.25rem;
   overflow: hidden;
+  z-index: 0;
 }
 
+/* The hero → about freeze, applied by <ScrollFx /> for the whole scroll.
+
+   `.hero` is a backdrop root: it contains three `filter: blur(90px)` orbs, a
+   `blur(60px)` halo, a `drop-shadow` portrait and four `backdrop-filter`
+   elements (the three `.hero-chip.glass` panes and `.scene__frame`). Anything
+   that moves its layer frame by frame makes the browser re-run those backdrop
+   blurs and re-rasterise the whole hero — that is what stuttered.
+
+   Sticky does the opposite: the offset is decided once, in `measure()`:
+
+   • hero fits the viewport → `top: 0`, the freeze is active from the very
+     first scrolled pixel;
+   • hero taller than the viewport (short laptop windows, all of mobile) →
+     `top: innerHeight - heroH`, a negative offset, so sticky engages at
+     exactly the scroll offset where the hero's bottom edge meets the viewport
+     bottom — the same bottom-edge pin that used to be emulated by writing
+     `translate3d` to `.hero` on every scroll frame, now held by the
+     compositor with zero per-frame JavaScript.
+
+   Either way the hero stops moving once pinned, so those blurs are rasterised
+   once and stay cached. `top` is fed through a custom property because it is
+   the stylesheet, not the script, that owns `position: sticky`. */
+.hero.is-sticky-pin {
+  position: sticky;
+  top: var(--hero-pin-top, 0px);
+}
+
+/* Once the About sheet has fully covered the hero (same offset the hero used to
+   be released at) nothing of it can be seen. The hero is pinned, so it never
+   leaves the viewport and the compositor would otherwise keep compositing a
+   full-screen layer for the rest of the page — take it out of the picture
+   entirely, which also stops <GatewayFlow /> from being repainted. */
+.is-hero-covered .hero { visibility: hidden; }
+
 @media (min-width: 1024px) {
-  .hero { padding: 9.5rem 2rem 6rem; }
+  .hero { padding: 9.5rem 2rem 4.5rem; }
 }
 
 .hero__backdrop {
@@ -328,59 +374,19 @@ img { display: block; max-width: 100%; }
   overflow: hidden;
 }
 
-.hero__atmosphere {
+/* Fade-to-black veil. <ScrollFx /> writes `--hero-fade` (0 → 1) to the hero
+   as the page scrolls; this pure-black layer fades in over the whole hero,
+   so the hero reads as dissolving into black rather than being covered by
+   the About sheet. It is a single compositor-only opacity, so it never
+   re-rasterises the blur backdrop underneath. */
+.hero__veil {
   position: absolute;
   inset: 0;
-  opacity: .5;
-  background:
-    linear-gradient(rgba(255, 255, 255, .03) 1px, transparent 1px),
-    linear-gradient(90deg, rgba(255, 255, 255, .03) 1px, transparent 1px),
-    conic-gradient(from 120deg at 50% 30%, transparent 0 25%, rgba(103, 232, 249, .07), transparent 45% 65%, rgba(167, 139, 250, .07), transparent 85%);
-  background-size: 56px 56px, 56px 56px, 100% 100%;
-  mask-image: radial-gradient(ellipse at 50% 35%, black 10%, transparent 72%);
-  animation: atmosphere-drift 26s ease-in-out infinite alternate;
-}
-
-@keyframes atmosphere-drift {
-  from { transform: translate3d(-1%, -.5%, 0) scale(1); }
-  to { transform: translate3d(1%, .5%, 0) scale(1.05); }
-}
-
-/* 3D floor grid */
-.floor {
-  position: absolute;
-  left: 50%;
-  bottom: -14%;
-  width: 240%;
-  height: 70%;
-  transform: translateX(-50%) perspective(760px) rotateX(74deg);
-  transform-origin: center bottom;
-  background-image:
-    linear-gradient(rgba(103, 232, 249, .22) 1px, transparent 1px),
-    linear-gradient(90deg, rgba(167, 139, 250, .18) 1px, transparent 1px);
-  background-size: 72px 72px;
-  mask-image: radial-gradient(ellipse 55% 75% at 50% 100%, rgba(0, 0, 0, .9), transparent 72%);
-  animation: floor-run 9s linear infinite;
-}
-
-@keyframes floor-run {
-  from { background-position: 0 0, 0 0; }
-  to { background-position: 0 72px, 72px 0; }
-}
-
-.orb {
-  position: absolute;
-  border-radius: 999px;
-  filter: blur(90px);
-  opacity: .16;
+  z-index: 10;
   pointer-events: none;
-  translate: var(--px) var(--py);
-  animation: float-soft 13s ease-in-out infinite;
+  background: #000;
+  opacity: var(--hero-fade, 0);
 }
-
-.orb--cyan { width: 34rem; height: 34rem; left: -12rem; top: 4rem; background: #22d3ee; }
-.orb--violet { width: 30rem; height: 30rem; right: -10rem; top: -4rem; background: #8b5cf6; animation-delay: -4s; }
-.orb--pink { width: 26rem; height: 26rem; right: 8%; bottom: -8rem; background: #f472b6; animation-delay: -8s; }
 
 @keyframes float-soft {
   0%, 100% { transform: translate3d(0, 0, 0) scale(1); }
@@ -440,10 +446,11 @@ img { display: block; max-width: 100%; }
 
 .hero__title {
   margin: 1.6rem 0 0;
+  font-family: var(--font-name), ui-sans-serif, system-ui, sans-serif;
   font-size: clamp(2.05rem, 5vw, 3.8rem);
-  font-weight: 650;
+  font-weight: 700;
   line-height: 1.04;
-  letter-spacing: -.035em;
+  letter-spacing: -.02em;
 }
 
 .hero__line {
@@ -573,6 +580,46 @@ img { display: block; max-width: 100%; }
   transform: scaleX(0);
   transform-origin: left center;
   animation: role-line-sweep 1.4s var(--ease) 1s forwards;
+}
+
+/* ---------------------------------------------------------- opening text */
+
+.opening {
+  display: inline;
+}
+
+.opening__chars {
+  display: inline;
+}
+
+.opening__char {
+  display: inline-block;
+  opacity: 0;
+  transform: translate3d(0, -0.7em, 0) scale(.6) rotateX(50deg);
+  filter: blur(6px);
+  animation: opening-char .85s cubic-bezier(.16, 1, .3, 1) both;
+  animation-delay: var(--open-delay, 0ms);
+}
+
+@keyframes opening-char {
+  0% {
+    opacity: 0;
+    transform: translate3d(0, -0.7em, 0) scale(.6) rotateX(50deg);
+    filter: blur(6px);
+    text-shadow: 0 0 0 rgba(103, 232, 249, 0);
+  }
+  55% {
+    opacity: 1;
+    transform: translate3d(0, 0.04em, 0) scale(1.04) rotateX(-4deg);
+    filter: blur(0);
+    text-shadow: 0 0 18px rgba(103, 232, 249, .7);
+  }
+  100% {
+    opacity: 1;
+    transform: translate3d(0, 0, 0) scale(1) rotateX(0deg);
+    filter: blur(0);
+    text-shadow: 0 0 8px rgba(103, 232, 249, .25);
+  }
 }
 
 @keyframes role-line-sweep { to { transform: scaleX(1); } }
@@ -877,6 +924,160 @@ img { display: block; max-width: 100%; }
   50% { transform: translateZ(var(--z, 120px)) translateY(-12px); }
 }
 
+/* Chat bubble on the portrait — cycles greeting messages on click, then
+   disappears after the last one. Glassmorphism card with avatar, typing
+   indicator and progress dots. */
+.hero-chat {
+  position: absolute;
+  top: 5%;
+  left: 2%;
+  z-index: 6;
+  display: inline-flex;
+  align-items: flex-end;
+  gap: .6rem;
+  padding: 0;
+  border: 0;
+  background: none;
+  cursor: pointer;
+  color: inherit;
+  font: inherit;
+  translate: calc(var(--px) * -1.6) calc(var(--py) * -1.4);
+  animation: chip-float 7s ease-in-out infinite;
+  transition: opacity .45s ease, transform .45s ease;
+}
+
+.hero-chat__avatar {
+  position: relative;
+  flex-shrink: 0;
+  width: 2.75rem;
+  height: 2.75rem;
+  border-radius: 50%;
+  overflow: hidden;
+  border: 2px solid rgba(255, 255, 255, .25);
+  box-shadow: 0 4px 16px rgba(0, 0, 0, .4);
+  background: rgba(255, 255, 255, .08);
+}
+
+.hero-chat__avatar-img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  object-position: center 20%;
+}
+
+.hero-chat__bubble {
+  position: relative;
+  display: inline-flex;
+  flex-direction: column;
+  gap: .45rem;
+  max-width: 16rem;
+  padding: .8rem 1rem .7rem;
+  border-radius: 1.1rem;
+  border-bottom-left-radius: .3rem;
+  background: rgba(255, 255, 255, .08);
+  backdrop-filter: blur(18px);
+  -webkit-backdrop-filter: blur(18px);
+  border: 1px solid rgba(255, 255, 255, .14);
+  color: #fafafa;
+  font-size: .85rem;
+  font-weight: 500;
+  line-height: 1.4;
+  letter-spacing: 0;
+  text-transform: none;
+  text-align: left;
+  box-shadow:
+    0 16px 40px rgba(0, 0, 0, .45),
+    inset 0 1px 0 rgba(255, 255, 255, .1);
+  animation: chat-pop .4s cubic-bezier(.34, 1.56, .64, 1);
+}
+
+.hero-chat__tail {
+  position: absolute;
+  bottom: .55rem;
+  left: -.4rem;
+  width: .8rem;
+  height: .8rem;
+  background: rgba(255, 255, 255, .08);
+  backdrop-filter: blur(18px);
+  -webkit-backdrop-filter: blur(18px);
+  border-left: 1px solid rgba(255, 255, 255, .14);
+  border-bottom: 1px solid rgba(255, 255, 255, .14);
+  clip-path: polygon(0 0, 100% 100%, 0 100%);
+}
+
+.hero-chat__dots {
+  position: absolute;
+  top: -.55rem;
+  left: 50%;
+  transform: translateX(-50%);
+  display: inline-flex;
+  gap: .25rem;
+  padding: .3rem .55rem;
+  border-radius: 999px;
+  background: rgba(255, 255, 255, .12);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  border: 1px solid rgba(255, 255, 255, .16);
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity .3s ease;
+}
+
+.hero-chat__dots span {
+  width: .3rem;
+  height: .3rem;
+  border-radius: 50%;
+  background: rgba(255, 255, 255, .7);
+  animation: typing-bounce 1.2s ease-in-out infinite;
+}
+
+.hero-chat__dots span:nth-child(2) { animation-delay: .15s; }
+.hero-chat__dots span:nth-child(3) { animation-delay: .3s; }
+
+@keyframes typing-bounce {
+  0%, 60%, 100% { transform: translateY(0); opacity: .5; }
+  30% { transform: translateY(-4px); opacity: 1; }
+}
+
+.hero-chat__text {
+  min-height: 1.4em;
+}
+
+.hero-chat__progress {
+  display: flex;
+  gap: .3rem;
+  padding-top: .15rem;
+}
+
+.hero-chat__progress span {
+  width: .35rem;
+  height: .35rem;
+  border-radius: 50%;
+  background: rgba(255, 255, 255, .2);
+  transition: background .3s ease, transform .3s ease;
+}
+
+.hero-chat__progress span.is-done {
+  background: #67e8f9;
+  transform: scale(1.15);
+}
+
+@keyframes chat-pop {
+  from { opacity: 0; transform: translateY(12px) scale(.9); }
+  to { opacity: 1; transform: translateY(0) scale(1); }
+}
+
+.hero-chat.is-leaving {
+  opacity: 0;
+  transform: translateY(-16px) scale(.88);
+  pointer-events: none;
+}
+
+.hero-chat:hover .hero-chat__bubble {
+  border-color: rgba(255, 255, 255, .28);
+  background: rgba(255, 255, 255, .12);
+}
+
 .scroll-cue {
   display: flex;
   flex-direction: column;
@@ -908,8 +1109,17 @@ img { display: block; max-width: 100%; }
   animation: cue-run 2.2s var(--ease-io, ease-in-out) infinite;
 }
 
+/* Animates `transform`, not `top`. `top` is a layout property: it invalidated
+   layout on every frame for the whole life of the page, which showed up as
+   ~2.8 style+layout passes per frame while scrolling (the trace's
+   `UpdateLayoutTree` count) even though nothing else was being measured.
+   The travel is unchanged — the track is 1px wide and `overflow: hidden`, so
+   the bar sliding the same distance reads identically. Percentages in
+   `translateY` resolve against the element's own height (40% of the track),
+   so 150% of track travel = 375% of element height. */
 @keyframes cue-run {
-  to { top: 110%; }
+  from { transform: translateY(0); }
+  to { transform: translateY(375%); }
 }
 
 /* --------------------------------------------------------------- reveals */
@@ -921,10 +1131,34 @@ img { display: block; max-width: 100%; }
     opacity .9s var(--ease),
     transform 1.05s var(--ease);
   transition-delay: var(--reveal-delay, 0ms);
-  will-change: opacity, transform;
 }
 
+/* No permanent `will-change` here. Every reveal in the document (dozens of
+   them) carried one, which pinned a composited layer for each of them for
+   the whole page lifetime and exhausted the compositor's layer budget — the
+   GPU then had nothing left to drive the hero pin and the fixed nav. The
+   promotion is instead scoped to the animation itself: <Reveal /> adds
+   `is-animating` on intersection and removes it once the transition ends. */
+.reveal.is-animating { will-change: opacity, transform; }
+
 .reveal.is-visible { opacity: 1; transform: none; }
+
+/* Intense popup variant — the section springs up from further below with a
+   larger scale change and a snappier settle, so it reads as "popping" into
+   place rather than gently fading up. */
+.reveal--pop {
+  opacity: 0;
+  transform: translate3d(0, var(--reveal-y, 64px), 0) scale(.88);
+  transition:
+    opacity .55s var(--ease),
+    transform .7s cubic-bezier(.16, 1, .3, 1);
+  transition-delay: var(--reveal-delay, 0ms);
+}
+
+.reveal--pop.is-visible {
+  opacity: 1;
+  transform: none;
+}
 
 /* ------------------------------------------------------------------ tilt */
 
@@ -934,8 +1168,11 @@ img { display: block; max-width: 100%; }
   transform-style: preserve-3d;
   transform: perspective(1000px) rotateX(var(--rx, 0deg)) rotateY(var(--ry, 0deg)) translateZ(0);
   transition: transform .45s var(--ease), border-color .45s var(--ease), box-shadow .55s var(--ease);
-  will-change: transform;
 }
+
+/* Promoted on hover only — see the note on `.reveal` above about permanent
+   `will-change` exhausting the compositor's layer budget. */
+.tilt:hover { will-change: transform; }
 
 .tilt__glare {
   position: absolute;
@@ -952,10 +1189,104 @@ img { display: block; max-width: 100%; }
 
 /* -------------------------------------------------------------- sections */
 
-.section { position: relative; width: min(72rem, 100%); margin: 0 auto; padding: 5.5rem 1.25rem; scroll-margin-top: 6.5rem; }
+.section { position: relative; z-index: 1; width: min(72rem, 100%); margin: 0 auto; padding: 4.5rem 1.25rem; scroll-margin-top: 6.5rem; overflow: hidden; background: var(--background); }
 
 @media (min-width: 1024px) {
-  .section { padding: 7rem 2rem; }
+  .section { padding: 5.5rem 2rem; }
+}
+
+/* --------------------------------------------------- scroll-driven fx */
+/* While the page scrolls, <ScrollFx /> sets `is-scrolling` on <html>: the
+   hero's animated backdrop (GatewayFlow canvas, floating orbs, orbiting
+   rings, glass chips) freezes on its last frame — it otherwise competes
+   with the compositor and stutters the scroll over the hero.
+   Everything resumes ~200ms after the last scroll event.
+
+   These are the exact elements that carry an animation. They used to be
+   selected as `.is-scrolling .hero__backdrop *, .is-scrolling .hero__scene *`,
+   and because the class lands on <html>, adding/removing it invalidated
+   computed style for every node in the hero subtree — hundreds of them, since
+   the name is emitted as one <span> per character. That put a full-subtree
+   style recalc on the first scroll frame and again 200ms after the last one,
+   which are the two worst moments of the transition. So every selector here is
+   class-scoped: Blink can build a descendant invalidation set from it and only
+   touches elements that actually match.
+
+   The list is deliberately complete rather than "the obvious decor". A census
+   of `document.getAnimations()` taken during a hero → about scroll showed the
+   following still *running* in every sample, none of them covered by the
+   original seven selectors, because `animation-play-state` does not inherit
+   and the animation sits on a pseudo-element:
+
+     • `.hero__word`      — `hue-drift`, an animating `filter` on the accent
+                            line: non-composited, so it re-style-recalculated
+                            and repainted the title on every frame.
+     • `.scramble-live`   — `shimmer`, four instances, animating
+                            `background-position` under `background-clip: text`
+                            (also repaint-per-frame).
+     • `.pulse-dot::after`— `pulse-ring`. The old `.hero-chip .pulse-dot`
+                            selector matched the dot itself, which carries no
+                            animation, so it was a no-op: both rings kept
+                            running through the whole transition.
+     • `.role-sep`        — `role-sep-pulse`.
+     • `.scroll-cue__track::after` — `cue-run`.
+     • entrance animations (`.hero-anim`, `.hero__char`, `.hero__scene-wrap`,
+       `.hero__role::after`) — irrelevant once settled, but they are the ones
+       running when the user scrolls immediately after load, and `char-in`
+       animates `filter: blur()`.
+
+   Everything still resumes ~200ms after the last scroll event, so the visible
+   design is untouched — the hero simply holds still while it is being covered. */
+.is-scrolling .hero__atmosphere,
+.is-scrolling .floor,
+.is-scrolling .orb,
+.is-scrolling .hero-chip,
+.is-scrolling .pulse-dot::after,
+.is-scrolling .scene__halo,
+.is-scrolling .scene__orbit,
+.is-scrolling .hero__word,
+.is-scrolling .scramble-live,
+.is-scrolling .scramble-live::after,
+.is-scrolling .role-sep,
+.is-scrolling .scroll-cue__track::after,
+.is-scrolling .hero-anim,
+.is-scrolling .hero__char,
+.is-scrolling .hero__scene-wrap,
+.is-scrolling .hero__role::after,
+.is-hero-covered .hero-chip,
+.is-hero-covered .pulse-dot::after,
+.is-hero-covered .scene__halo,
+.is-hero-covered .scene__orbit,
+.is-hero-covered .hero__word,
+.is-hero-covered .scramble-live,
+.is-hero-covered .scramble-live::after,
+.is-hero-covered .role-sep,
+.is-hero-covered .scroll-cue__track::after,
+.is-hero-covered .hero-anim,
+.is-hero-covered .hero__char,
+.is-hero-covered .hero__scene-wrap,
+.is-hero-covered .hero__role::after {
+  animation-play-state: paused;
+}
+
+/* <ScrollFx /> pins .hero with `position: sticky` and a measured `top` (see
+   `.hero.is-sticky-pin`): it freezes in place while the About sheet rises over
+   it (layered section transition) and is released — invisibly — once About
+   fully covers it. Without JS or with prefers-reduced-motion nothing is
+   applied: the hero scrolls normally. */
+
+/* opaque full-bleed sheet: every section slides over the previous layer,
+   so there is never a gap, a ghost, or the hero peeking through */
+/* subtle seam — the leading edge of each sheet reads as intentional */
+.section::before {
+  content: "";
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 1px;
+  background: linear-gradient(90deg, transparent, rgba(255, 255, 255, .1) 18%, rgba(103, 232, 249, .28) 50%, rgba(255, 255, 255, .1) 82%, transparent);
+  pointer-events: none;
 }
 
 .section-head {
@@ -1392,8 +1723,25 @@ img { display: block; max-width: 100%; }
 /* ---------------------------------------------------------------- footer */
 
 .site-footer {
+  position: relative;
+  z-index: 1;
   border-top: 1px solid rgba(255, 255, 255, .07);
   padding: 2.2rem 1.25rem 3rem;
+}
+
+/* Same opaque full-bleed sheet as .section::after, so the contact → footer
+   transition is layered like every other section boundary. */
+.site-footer::after {
+  content: "";
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  left: 50%;
+  width: 100vw;
+  transform: translateX(-50%);
+  background: var(--background);
+  z-index: -1;
+  pointer-events: none;
 }
 
 .site-footer__inner {
@@ -1426,10 +1774,9 @@ img { display: block; max-width: 100%; }
 /* --------------------------------------------------------- media & motion */
 
 @media (max-width: 640px) {
-  .orb { filter: blur(60px); opacity: .13; }
-  .orb--cyan { width: 20rem; height: 20rem; left: -8rem; }
-  .orb--violet { width: 18rem; height: 18rem; right: -6rem; }
-  .orb--pink { width: 16rem; height: 16rem; }
+  .hero-chat { left: 0; gap: .45rem; }
+  .hero-chat__avatar { width: 2.25rem; height: 2.25rem; }
+  .hero-chat__bubble { max-width: 12rem; font-size: .76rem; padding: .65rem .8rem .55rem; }
   .hero-chip--tl { left: -2%; }
   .hero-chip--br { right: -2%; }
   .hero-chip--mr { display: none; }

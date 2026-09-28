@@ -1,12 +1,14 @@
 "use client";
 
 import Image from "next/image";
-import { useEffect, useRef, type CSSProperties } from "react";
+import { useEffect, useRef, useState, type CSSProperties } from "react";
 
 import GatewayFlow from "@/components/ui/gateway-flow";
 import { LiquidMetalButton } from "@/components/ui/liquid-metal-button";
+import OpeningText from "@/components/ui/opening-text";
 import ScrambleText from "@/components/ui/scramble-text";
 import TiltCard from "@/components/ui/tilt-card";
+import VortexBg from "@/components/ui/vortex-bg";
 import type { Profile, SocialLink } from "@/lib/portfolio-data";
 
 type Stat = { value: string; label: string };
@@ -82,8 +84,27 @@ function PinIcon() {
   );
 }
 
+const CHAT_MESSAGES = [
+  "Hi! Welcome to my portfolio",
+  "I'm currently open to work",
+  "Let's connect — click to reach out!",
+];
+
 export default function HeroScene({ profile, socialLinks, stats }: HeroSceneProps) {
   const sectionRef = useRef<HTMLElement>(null);
+  const [chatIndex, setChatIndex] = useState(0);
+  const [chatVisible, setChatVisible] = useState(true);
+
+  const [chatLeaving, setChatLeaving] = useState(false);
+
+  const handleChatClick = () => {
+    if (chatIndex < CHAT_MESSAGES.length - 1) {
+      setChatIndex((i) => i + 1);
+    } else {
+      setChatLeaving(true);
+      window.setTimeout(() => setChatVisible(false), 450);
+    }
+  };
 
   useEffect(() => {
     const section = sectionRef.current;
@@ -98,21 +119,53 @@ export default function HeroScene({ profile, socialLinks, stats }: HeroSceneProp
     let currentX = 0;
     let currentY = 0;
     let frame = 0;
+    let lastRx = "";
+    let lastRy = "";
+    let lastPx = "";
+    let lastPy = "";
 
     const apply = () => {
       currentX += (targetX - currentX) * 0.07;
       currentY += (targetY - currentY) * 0.07;
 
-      section.style.setProperty("--ry", `${(currentX * 9).toFixed(3)}deg`);
-      section.style.setProperty("--rx", `${(-currentY * 7).toFixed(3)}deg`);
-      section.style.setProperty("--px", `${(currentX * 26).toFixed(2)}px`);
-      section.style.setProperty("--py", `${(currentY * 18).toFixed(2)}px`);
+      const settled =
+        Math.abs(targetX - currentX) <= 0.0008 && Math.abs(targetY - currentY) <= 0.0008;
 
-      if (Math.abs(targetX - currentX) > 0.0008 || Math.abs(targetY - currentY) > 0.0008) {
-        frame = requestAnimationFrame(apply);
-      } else {
-        frame = 0;
+      // These custom properties are inherited by the whole hero: they feed
+      // `.hero__scene`'s 3D transform, `.orb` and `.hero-chip` parallax, and —
+      // because `.tilt` falls back to `var(--rx, 0deg)` — every tilt card in
+      // the hero. Writing them re-runs style for that whole subtree on the
+      // main thread, so while the page is scrolling (the hero → about window,
+      // where <ScrollFx /> is already writing a transform every frame) we keep
+      // easing but hold the last written value instead of competing with it.
+      // The tilt resumes on the next pointer move.
+      if (!settled && !document.documentElement.classList.contains("is-scrolling")) {
+        const rx = `${(-currentY * 7).toFixed(3)}deg`;
+        const ry = `${(currentX * 9).toFixed(3)}deg`;
+        const px = `${(currentX * 26).toFixed(2)}px`;
+        const py = `${(currentY * 18).toFixed(2)}px`;
+
+        // Skip no-op writes: an identical custom-property value still
+        // invalidates style for every descendant that consumes it.
+        if (rx !== lastRx) {
+          lastRx = rx;
+          section.style.setProperty("--rx", rx);
+        }
+        if (ry !== lastRy) {
+          lastRy = ry;
+          section.style.setProperty("--ry", ry);
+        }
+        if (px !== lastPx) {
+          lastPx = px;
+          section.style.setProperty("--px", px);
+        }
+        if (py !== lastPy) {
+          lastPy = py;
+          section.style.setProperty("--py", py);
+        }
       }
+
+      frame = settled ? 0 : requestAnimationFrame(apply);
     };
 
     const start = () => {
@@ -155,13 +208,11 @@ export default function HeroScene({ profile, socialLinks, stats }: HeroSceneProp
   return (
     <section id="top" ref={sectionRef} className="hero">
       <div className="hero__backdrop" aria-hidden="true">
-        <div className="hero__atmosphere" />
-        <GatewayFlow className="pointer-events-none absolute inset-0 h-full w-full opacity-40" density={0.8} opacity={0.55} speed={0.3} />
-        <div className="floor" />
-        <div className="orb orb--cyan" />
-        <div className="orb orb--violet" />
-        <div className="orb orb--pink" />
+        <VortexBg className="absolute inset-0 h-full w-full opacity-70" lineCount={36} hue={190} speed={0.4} amplitude={60} />
+        <GatewayFlow className="pointer-events-none absolute inset-0 h-full w-full opacity-30" density={0.8} opacity={0.45} speed={0.3} />
       </div>
+
+      <div className="hero__veil" aria-hidden="true" />
 
       <div className="hero__grid">
         <div className="hero__copy">
@@ -191,12 +242,11 @@ export default function HeroScene({ profile, socialLinks, stats }: HeroSceneProp
                 </span>
               </>
             ) : null}
-            <ScrambleText
+            <OpeningText
               className="role-decode"
               text={ROLE_TEXT}
               delay={950}
-              speed={38}
-              gradient={ROLE_GRADIENT}
+              speed={55}
             />
           </p>
 
@@ -269,16 +319,46 @@ export default function HeroScene({ profile, socialLinks, stats }: HeroSceneProp
               />
             </div>
 
-            <div className="glass hero-chip hero-chip--tl" style={{ "--z": "120px" } as CSSProperties}>
-              <span className="pulse-dot" aria-hidden="true" />
-              Open to work
-            </div>
-            <div className="glass hero-chip hero-chip--br" style={{ "--z": "140px" } as CSSProperties}>
-              Web · Mobile · UI
-            </div>
-            <div className="glass hero-chip hero-chip--mr" style={{ "--z": "90px" } as CSSProperties}>
-              {profile.role}
-            </div>
+            {chatVisible && (
+              <div
+                className={`hero-chat${chatLeaving ? " is-leaving" : ""}`}
+                style={{ "--z": "120px" } as CSSProperties}
+                role="button"
+                tabIndex={0}
+                onClick={handleChatClick}
+                onKeyDown={(e) => {
+                  if (e.key === "Enter" || e.key === " ") {
+                    e.preventDefault();
+                    handleChatClick();
+                  }
+                }}
+                aria-label={`Chat greeting ${chatIndex + 1} of ${CHAT_MESSAGES.length}`}
+              >
+                <span className="hero-chat__avatar" aria-hidden="true">
+                  <Image
+                    src="/images/Febry.png"
+                    alt=""
+                    width={44}
+                    height={44}
+                    className="hero-chat__avatar-img"
+                  />
+                </span>
+                <span className="hero-chat__bubble">
+                  <span className="hero-chat__dots" aria-hidden="true">
+                    <span />
+                    <span />
+                    <span />
+                  </span>
+                  <span className="hero-chat__text">{CHAT_MESSAGES[chatIndex]}</span>
+                  <span className="hero-chat__tail" aria-hidden="true" />
+                  <span className="hero-chat__progress" aria-hidden="true">
+                    {CHAT_MESSAGES.map((_, i) => (
+                      <span key={i} className={i <= chatIndex ? "is-done" : ""} />
+                    ))}
+                  </span>
+                </span>
+              </div>
+            )}
           </div>
         </div>
       </div>

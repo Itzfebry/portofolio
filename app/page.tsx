@@ -4,6 +4,8 @@ import { GithubIcon, InstagramIcon, LinkedinIcon } from "@/components/ui/brand-i
 import HeroScene from "@/components/ui/hero-scene";
 import LiquidGlassShell from "@/components/ui/liquid-glass-shell";
 import Reveal from "@/components/ui/reveal";
+import ScrollFx from "@/components/ui/scroll-fx";
+import SectionBg from "@/components/ui/section-bg";
 import SiteNav from "@/components/ui/site-nav";
 import TiltCard from "@/components/ui/tilt-card";
 import { getPortfolioData } from "@/lib/portfolio-data";
@@ -61,6 +63,7 @@ export default async function Home() {
   return (
     <>
       <SiteNav email={data.profile.email} />
+      <ScrollFx />
 
       <LiquidGlassShell>
         <main className="relative text-white">
@@ -68,20 +71,23 @@ export default async function Home() {
 
           {/* ------------------------------------------------------ about */}
           <section id="about" className="section">
-            <div className="section-head">
-              <div>
-                <p className="section-index">01 — About</p>
-                <h2 className="section-title">
-                  Who am i?
-                  <br />
-                   Something about <span className="gradient-text">me</span>.
-                </h2>
+            <SectionBg variant="grid" hue={190} speed={0.25} className="absolute inset-0 opacity-60" />
+            <Reveal y={64} className="reveal--pop relative z-10">
+              <div className="section-head">
+                <div>
+                  <p className="section-index">01 — About</p>
+                  <h2 className="section-title">
+                    Who am i?
+                    <br />
+                     Something about <span className="gradient-text">me</span>.
+                  </h2>
+                </div>
+                <p className="section-note">Who I am &amp; how I work</p>
               </div>
-              <p className="section-note">Who I am &amp; how I work</p>
-            </div>
+            </Reveal>
 
             <div className="grid gap-5 md:grid-cols-[1.25fr_.75fr]">
-              <Reveal className="h-full">
+              <Reveal y={64} delay={100} className="reveal--pop h-full">
                 <div className="glass rgb-ring lift h-full rounded-3xl p-7 sm:p-9">
                   <p className="text-lg leading-8 text-zinc-300">{data.profile.bio}</p>
                   <div className="mt-8 flex flex-wrap gap-3">
@@ -93,7 +99,7 @@ export default async function Home() {
                 </div>
               </Reveal>
 
-              <Reveal delay={120} className="h-full">
+              <Reveal y={64} delay={200} className="reveal--pop h-full">
                 <div className="glass lift h-full rounded-3xl p-7 sm:p-9">
                   <p className="section-index">Details</p>
                   <dl className="mt-7 space-y-5 text-sm">
@@ -128,19 +134,22 @@ export default async function Home() {
 
           {/* ----------------------------------------------------- skills */}
           <section id="skills" className="section">
-            <div className="section-head">
-              <div>
-                <p className="section-index">02 — Skills</p>
-                <h2 className="section-title">
-                  My Tools <span className="gradient-text">craft</span>.
-                </h2>
+            <SectionBg variant="particles" hue={260} speed={0.35} className="absolute inset-0 opacity-50" />
+            <Reveal className="relative z-10">
+              <div className="section-head">
+                <div>
+                  <p className="section-index">02 — Skills</p>
+                  <h2 className="section-title">
+                    My Tools <span className="gradient-text">craft</span>.
+                  </h2>
+                </div>
+                <p className="section-note">{data.skills.length} technologies</p>
               </div>
-              <p className="section-note">{data.skills.length} technologies</p>
-            </div>
+            </Reveal>
 
-            <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+            <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3 relative z-10">
               {data.skills.map((skill, index) => (
-                <Reveal key={skill.id} delay={(index % 3) * 90} className="h-full">
+                <Reveal key={skill.id} delay={(index % 3) * 90} className="h-full relative z-10">
                   <TiltCard className="glass h-full" max={10}>
                     <div className="skill-card">
                       <div className="flex items-center gap-3">
@@ -165,19 +174,22 @@ export default async function Home() {
 
           {/* --------------------------------------------------- projects */}
           <section id="projects" className="section">
-            <div className="section-head">
-              <div>
-                <p className="section-index">03 — Projects</p>
-                <h2 className="section-title">
-                  What i have <span className="gradient-text">done</span>.
-                </h2>
+            <SectionBg variant="waves" hue={210} speed={0.4} className="absolute inset-0 opacity-50" />
+            <Reveal className="relative z-10">
+              <div className="section-head">
+                <div>
+                  <p className="section-index">03 — Projects</p>
+                  <h2 className="section-title">
+                    What i have <span className="gradient-text">done</span>.
+                  </h2>
+                </div>
+                <p className="section-note">{data.projects.length} case studies</p>
               </div>
-              <p className="section-note">{data.projects.length} case studies</p>
-            </div>
+            </Reveal>
 
-            <div className="grid gap-5 md:grid-cols-2">
+            <div className="grid gap-5 md:grid-cols-2 relative z-10">
               {data.projects.map((project, index) => (
-                <Reveal key={project.id} delay={index * 110} className="h-full">
+                <Reveal key={project.id} delay={index * 110} className="h-full relative z-10">
                   <TiltCard className="glass h-full" max={7}>
                     <article className="project-card">
                       <div className="project-card__media">
@@ -235,19 +247,22 @@ export default async function Home() {
 
           {/* ------------------------------------------------- experience */}
           <section id="experience" className="section">
-            <div className="section-head">
-              <div>
-                <p className="section-index">04 — Experience</p>
-                <h2 className="section-title">
-                  My <span className="gradient-text"> Experience. </span>
-                </h2>
+            <SectionBg variant="pulse" hue={280} speed={0.3} className="absolute inset-0 opacity-50" />
+            <Reveal className="relative z-10">
+              <div className="section-head">
+                <div>
+                  <p className="section-index">04 — Experience</p>
+                  <h2 className="section-title">
+                    My <span className="gradient-text"> Experience. </span>
+                  </h2>
+                </div>
+                <p className="section-note">{data.experiences.length} roles</p>
               </div>
-              <p className="section-note">{data.experiences.length} roles</p>
-            </div>
+            </Reveal>
 
-            <div className="timeline">
+            <div className="timeline relative z-10">
               {data.experiences.map((item, index) => (
-                <Reveal key={item.id} delay={index * 110} className="timeline__item">
+                <Reveal key={item.id} delay={index * 110} className="timeline__item relative z-10">
                   <TiltCard className="glass" max={5}>
                     <div className="flex flex-col gap-4 p-6 sm:flex-row sm:items-start sm:justify-between sm:p-7">
                       <div>
@@ -273,8 +288,9 @@ export default async function Home() {
 
           {/* --------------------------------------------------- contact */}
           <section id="contact" className="section pb-24">
-            <Reveal>
-              <div className="glass rgb-ring contact-panel">
+            <SectionBg variant="dots" hue={180} speed={0.35} className="absolute inset-0 opacity-50" />
+            <Reveal className="relative z-10">
+              <div className="glass rgb-ring contact-panel relative z-10">
                 <div className="contact-panel__glow" aria-hidden="true" />
 
                 <div className="contact-grid">
