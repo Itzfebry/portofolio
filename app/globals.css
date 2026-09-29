@@ -1901,6 +1901,36 @@ img { display: block; max-width: 100%; }
 
 @keyframes float-soft-y { 50% { transform: translateY(-6px); } }
 
+/* Tahan semua animasi masuk hero sampai <OpeningScreen /> melepasnya lewat
+   markEntered() (lib/entrance.ts). Kelas `is-entered` tidak ada di HTML
+   hasil render server, jadi penahanan ini aktif sejak paint pertama — tanpa
+   itu seluruh entrance sudah selesai bermain di balik splash. Tanpa
+   JavaScript kelas ini tidak pernah terpasang; blok <noscript> di layout
+   mengembalikan animasinya. */
+html:not(.is-entered) .hero-anim,
+html:not(.is-entered) .hero__char,
+html:not(.is-entered) .hero__scene-wrap,
+html:not(.is-entered) .hero__role::after {
+  animation-name: none;
+}
+
+/* State dasar `.hero__char` justru terlihat (tidak seperti tiga lainnya yang
+   opacity 0 / scaleX 0), jadi ditahan eksplisit supaya tidak sempat muncul
+   statis di balik splash yang sedang memudar. */
+html:not(.is-entered) .hero__char { opacity: 0; }
+
+/* Tanpa JavaScript kelas `is-entered` tidak pernah terpasang, jadi splash
+   dibuang dan seluruh animasi di atas dikembalikan seperti semula. */
+@media (scripting: none) {
+  .splash { display: none !important; }
+  .hero-anim { animation-name: fade-up !important; }
+  .hero__char { animation-name: char-in !important; opacity: 1 !important; }
+  .hero__scene-wrap { animation-name: scene-in !important; }
+  .hero__role::after { animation-name: role-line-sweep !important; }
+  .reveal,
+  .reveal--pop { opacity: 1 !important; transform: none !important; }
+}
+
 /* --------------------------------------------------------------- splash */
 
 .splash {
@@ -2035,8 +2065,8 @@ img { display: block; max-width: 100%; }
 .splash__panel {
   position: relative;
   z-index: 1;
-  width: min(34rem, 100%);
-  padding: 2.35rem 2rem 1.8rem;
+  width: min(30rem, 100%);
+  padding: 2.6rem 2.25rem 2.1rem;
   border-radius: 1.5rem;
   animation: splash-panel-in .95s var(--ease) both;
 }
@@ -2107,9 +2137,9 @@ img { display: block; max-width: 100%; }
   position: relative;
   display: grid;
   place-items: center;
-  width: 4.25rem;
-  height: 4.25rem;
-  margin: 0 auto 1.15rem;
+  width: 5.75rem;
+  height: 5.75rem;
+  margin: 0 auto 1.4rem;
 }
 
 .splash__ring {
@@ -2134,36 +2164,24 @@ img { display: block; max-width: 100%; }
   to { transform: rotate(360deg); }
 }
 
-.splash__mono {
-  display: grid;
-  place-items: center;
-  width: 3.1rem;
-  height: 3.1rem;
-  border-radius: 50%;
-  font-family: var(--font-mono);
-  font-size: .92rem;
-  font-weight: 700;
-  letter-spacing: .05em;
-  color: #eafcff;
-  background: linear-gradient(150deg, rgba(255, 255, 255, .15), rgba(255, 255, 255, .04));
-  border: 1px solid rgba(255, 255, 255, .16);
-  box-shadow:
-    inset 0 1px 0 rgba(255, 255, 255, .28),
-    0 10px 26px -16px rgba(103, 232, 249, .9);
-  backdrop-filter: blur(10px);
-  -webkit-backdrop-filter: blur(10px);
+.splash__logo {
+  display: block;
+  width: 125%;
+  height: 125%;
+  object-fit: contain;
+  filter: drop-shadow(0 0 20px rgba(103, 232, 249, .35));
 }
 
 /* --- head ------------------------------------------------------------- */
 
-.splash__head { text-align: center; margin-bottom: 1.55rem; }
+.splash__head { text-align: center; margin-bottom: 1.9rem; }
 
 .splash__title {
   /* box harus memeluk teks supaya gradasi-nya tidak terpotong */
   width: fit-content;
   margin: 0 auto;
   font-family: var(--font-artistic), ui-sans-serif, sans-serif;
-  font-size: clamp(1.2rem, 4.4vw, 1.55rem);
+  font-size: clamp(1.3rem, 4.8vw, 1.7rem);
   font-weight: 600;
   letter-spacing: .04em;
   background: linear-gradient(92deg, #ffffff 10%, var(--cyan) 50%, var(--violet));
@@ -2172,62 +2190,9 @@ img { display: block; max-width: 100%; }
   color: transparent;
 }
 
-.splash__sub {
-  margin: .45rem 0 0;
-  font-family: var(--font-mono);
-  font-size: .6rem;
-  letter-spacing: .3em;
-  color: rgba(255, 255, 255, .42);
-}
-
-/* --- boot log --------------------------------------------------------- */
-
-.splash__log { display: grid; gap: .48rem; margin-bottom: 1.6rem; }
-
-.splash__line {
-  display: flex;
-  align-items: baseline;
-  gap: .5rem;
-  margin: 0;
-  font-family: var(--font-mono);
-  font-size: .68rem;
-  color: rgba(255, 255, 255, .55);
-  opacity: 0;
-}
-
-.splash__line.is-on { animation: splash-line .45s var(--ease) both; }
-
-@keyframes splash-line {
-  from { opacity: 0; transform: translateX(-8px); filter: blur(4px); }
-  to { opacity: 1; transform: none; filter: none; }
-}
-
-.splash__prompt { color: var(--cyan); flex: none; }
-
-.splash__txt {
-  min-width: 0;
-  overflow: hidden;
-  white-space: nowrap;
-  text-overflow: ellipsis;
-}
-
-.splash__leader {
-  flex: 1 1 auto;
-  min-width: .5rem;
-  border-bottom: 1px dotted rgba(255, 255, 255, .18);
-}
-
-.splash__ok {
-  flex: none;
-  margin-left: auto;
-  font-size: .6rem;
-  letter-spacing: .1em;
-  color: var(--cyan);
-}
-
 /* --- meter ------------------------------------------------------------ */
 
-.splash__meter { display: grid; gap: .62rem; }
+.splash__meter { display: grid; gap: .75rem; }
 
 .splash__bar {
   position: relative;
@@ -2275,19 +2240,13 @@ img { display: block; max-width: 100%; }
   to { transform: translateX(100%); }
 }
 
-.splash__meta {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  font-family: var(--font-mono);
-  font-size: .58rem;
-  letter-spacing: .22em;
-  color: rgba(255, 255, 255, .38);
-}
-
 .splash__pct {
+  margin: 0;
+  text-align: center;
+  font-family: var(--font-mono);
+  font-size: .68rem;
   font-variant-numeric: tabular-nums;
-  letter-spacing: .1em;
+  letter-spacing: .18em;
   color: var(--cyan);
   text-shadow: 0 0 12px rgba(103, 232, 249, .55);
 }
@@ -2325,13 +2284,10 @@ img { display: block; max-width: 100%; }
 /* --- responsive ------------------------------------------------------- */
 
 @media (max-width: 560px) {
-  .splash__panel { padding: 1.85rem 1.3rem 1.4rem; border-radius: 1.15rem; }
-  .splash__brand { width: 3.6rem; height: 3.6rem; margin-bottom: .95rem; }
-  .splash__mono { width: 2.6rem; height: 2.6rem; font-size: .8rem; }
-  .splash__head { margin-bottom: 1.2rem; }
-  .splash__log { gap: .4rem; margin-bottom: 1.25rem; }
-  .splash__line { font-size: .6rem; gap: .4rem; }
-  .splash__leader { display: none; }
+  .splash__panel { padding: 2.1rem 1.4rem 1.7rem; border-radius: 1.15rem; }
+  .splash__brand { width: 4.75rem; height: 4.75rem; margin-bottom: 1.1rem; }
+  .splash__head { margin-bottom: 1.5rem; }
+  .splash__meter { gap: .6rem; }
   .splash__corner { width: .85rem; height: .85rem; }
   .splash__skip { right: 1rem; bottom: 1rem; padding: .5rem .9rem; font-size: .58rem; }
 }
@@ -2342,7 +2298,6 @@ img { display: block; max-width: 100%; }
 @media (prefers-reduced-motion: reduce) {
   .splash { animation-duration: 7s !important; }
   .splash__beam { display: none !important; }
-  .splash__line { opacity: 1 !important; }
 }
 
 /* --------------------------------------------------------- media & motion */

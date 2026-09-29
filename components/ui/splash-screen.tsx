@@ -1,18 +1,15 @@
 "use client";
 
+import Image from "next/image";
 import { useCallback, useEffect, useRef, useState, type CSSProperties } from "react";
+
+import { markEntered, resetEntered } from "@/lib/entrance";
 
 const DURATION = 2400;
 const HOLD = 380;
 const EXIT = 760;
-
-const LOG = [
-  { text: "boot glass.kernel", status: "ok" },
-  { text: "mount · about skills projects", status: "ok" },
-  { text: "link · supabase pool", status: "ok" },
-  { text: "compile · vortex grid pulse", status: "ok" },
-  { text: "system ready", status: "100%" },
-];
+/** Jaring pengaman: kalau logika keluar gagal, hero tetap dilepas. */
+const BACKSTOP = 8000;
 
 /** Posisi deterministik supaya SSR dan client menghasilkan markup yang sama. */
 const PARTICLES = [
@@ -32,7 +29,6 @@ const PARTICLES = [
 
 function SplashScreen({ onDone }: { onDone: () => void }) {
   const [progress, setProgress] = useState(0);
-  const [shown, setShown] = useState(0);
   const [leaving, setLeaving] = useState(false);
 
   const doneRef = useRef(false);
@@ -51,6 +47,9 @@ function SplashScreen({ onDone }: { onDone: () => void }) {
     if (leavingRef.current) return;
     leavingRef.current = true;
     clearPending();
+    // Dilepas di sini — saat splash masih 100% opak — bukan setelah unmount,
+    // supaya animasi masuk hero sudah berjalan ketika splash mulai memudar.
+    markEntered();
     setLeaving(true);
     timerRef.current = window.setTimeout(() => {
       if (doneRef.current) return;
@@ -63,7 +62,6 @@ function SplashScreen({ onDone }: { onDone: () => void }) {
     if (leavingRef.current) return;
     clearPending();
     setProgress(100);
-    setShown(LOG.length);
     startLeaving();
   }, [clearPending, startLeaving]);
 
@@ -80,15 +78,15 @@ function SplashScreen({ onDone }: { onDone: () => void }) {
   useEffect(() => {
     const reduced = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
 
-    // Reduced motion: tampil sebagai kartu statis sesaat, tanpa animasi.
+    // Reduced motion: kartu statis tanpa gerak, lalu hilang.
     if (reduced) {
       rafRef.current = requestAnimationFrame(() => {
         setProgress(100);
-        setShown(LOG.length);
         rafRef.current = null;
         timerRef.current = window.setTimeout(() => {
           if (doneRef.current) return;
           doneRef.current = true;
+          markEntered();
           onDone();
         }, 900);
       });
@@ -96,19 +94,15 @@ function SplashScreen({ onDone }: { onDone: () => void }) {
     }
 
     const start = performance.now();
-    const perLine = DURATION / (LOG.length + 0.5);
 
     const tick = (now: number) => {
-      const elapsed = now - start;
-      const t = Math.min(1, elapsed / DURATION);
+      const t = Math.min(1, (now - start) / DURATION);
       setProgress(Math.round((1 - Math.pow(1 - t, 3)) * 100));
-      setShown(Math.min(LOG.length, Math.floor(elapsed / perLine)));
 
       if (t < 1) {
         rafRef.current = requestAnimationFrame(tick);
         return;
       }
-      setShown(LOG.length);
       timerRef.current = window.setTimeout(startLeaving, HOLD);
     };
 
@@ -128,10 +122,7 @@ function SplashScreen({ onDone }: { onDone: () => void }) {
   }, [skip]);
 
   return (
-    <div
-      className={`splash${leaving ? " is-leaving" : ""}`}
-      onClick={skip}
-    >
+    <div className={`splash${leaving ? " is-leaving" : ""}`} onClick={skip}>
       <p className="sr-only" role="status">
         Memuat portofolio
       </p>
@@ -168,37 +159,37 @@ function SplashScreen({ onDone }: { onDone: () => void }) {
 
         <div className="splash__brand">
           <span className="splash__ring" />
-          <span className="splash__mono">IF</span>
+          <Image
+            className="splash__logo"
+            src="/favicon.png"
+            alt=""
+            width={500}
+            height={500}
+            priority
+            unoptimized
+          />
         </div>
 
         <div className="splash__head">
           <p className="splash__title">ItzFebryHcx</p>
-          <p className="splash__sub">PORTFOLIO · SYSTEM BOOT</p>
-        </div>
-
-        <div className="splash__log">
-          {LOG.map((line, i) => (
-            <p key={line.text} className={`splash__line${i < shown ? " is-on" : ""}`}>
-              <span className="splash__prompt">›</span>
-              <span className="splash__txt">{line.text}</span>
-              <span className="splash__leader" />
-              <span className="splash__ok">{line.status}</span>
-            </p>
-          ))}
         </div>
 
         <div className="splash__meter">
           <div className="splash__bar">
             <span className="splash__fill" style={{ width: `${progress}%` }} />
           </div>
-          <div className="splash__meta">
-            <span>LOADING</span>
-            <span className="splash__pct">{String(progress).padStart(3, "0")}%</span>
-          </div>
+          <p className="splash__pct">{String(progress).padStart(3, "0")}%</p>
         </div>
       </div>
 
-      <button type="button" className="splash__skip" onClick={(e) => { e.stopPropagation(); skip(); }}>
+      <button
+        type="button"
+        className="splash__skip"
+        onClick={(e) => {
+          e.stopPropagation();
+          skip();
+        }}
+      >
         Lewati
         <span aria-hidden="true">→</span>
       </button>
@@ -209,6 +200,17 @@ function SplashScreen({ onDone }: { onDone: () => void }) {
 export default function OpeningScreen() {
   const [done, setDone] = useState(false);
   const handleDone = useCallback(() => setDone(true), []);
+
+  useEffect(() => {
+    // Jaring pengaman: splash sendiri disembunyikan CSS setelah 7s, jadi hero
+    // juga harus dilepas kalaupun logika keluar di SplashScreen tidak jalan.
+    const backstop = window.setTimeout(markEntered, BACKSTOP);
+
+    return () => {
+      window.clearTimeout(backstop);
+      resetEntered();
+    };
+  }, []);
 
   if (done) return null;
   return <SplashScreen onDone={handleDone} />;

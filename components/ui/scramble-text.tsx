@@ -2,6 +2,8 @@
 
 import { useEffect, useState, type CSSProperties } from "react";
 
+import { onEnter } from "@/lib/entrance";
+
 type ScrambleTextProps = {
   /** final text */
   text: string;
@@ -36,7 +38,6 @@ export default function ScrambleText({
 
   useEffect(() => {
     const reduced = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
-    const startedAt = performance.now() + delay;
 
     const finish = () => {
       setOutput(text);
@@ -48,26 +49,37 @@ export default function ScrambleText({
       return () => window.clearTimeout(timeout);
     }
 
-    const timer = window.setInterval(() => {
-      const now = performance.now();
-      if (now < startedAt) return;
+    let timer = 0;
 
-      const revealed = Math.floor((now - startedAt) / speed);
-      if (revealed >= text.length) {
-        window.clearInterval(timer);
-        finish();
-        return;
-      }
+    const start = () => {
+      const startedAt = performance.now() + delay;
+      timer = window.setInterval(() => {
+        const now = performance.now();
+        if (now < startedAt) return;
 
-      let line = "";
-      for (let index = 0; index < text.length; index += 1) {
-        const character = text[index];
-        line += index < revealed || character === " " ? character : randomGlyph();
-      }
-      setOutput(line);
-    }, 45);
+        const revealed = Math.floor((now - startedAt) / speed);
+        if (revealed >= text.length) {
+          window.clearInterval(timer);
+          finish();
+          return;
+        }
 
-    return () => window.clearInterval(timer);
+        let line = "";
+        for (let index = 0; index < text.length; index += 1) {
+          const character = text[index];
+          line += index < revealed || character === " " ? character : randomGlyph();
+        }
+        setOutput(line);
+      }, 45);
+    };
+
+    // Ditahan sampai splash selesai — kalau tidak, angkanya sudah selesai
+    // di-scramble di balik splash.
+    const stop = onEnter(start);
+    return () => {
+      stop();
+      window.clearInterval(timer);
+    };
   }, [text, delay, speed]);
 
   const style = gradient

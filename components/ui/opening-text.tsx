@@ -2,6 +2,8 @@
 
 import { useEffect, useRef, useState, type CSSProperties } from "react";
 
+import { onEnter } from "@/lib/entrance";
+
 type OpeningTextProps = {
   text: string;
   className?: string;
@@ -33,24 +35,31 @@ export default function OpeningText({
       return;
     }
 
-    const startedAt = performance.now() + delay;
     let interval = 0;
 
-    const tick = () => {
-      const now = performance.now();
-      if (now < startedAt) return;
-      const count = Math.min(text.length, Math.floor((now - startedAt) / speed));
-      if (count !== revealedRef.current) {
-        revealedRef.current = count;
-        setRevealed(count);
-      }
-      if (count >= text.length) {
-        window.clearInterval(interval);
-      }
+    const start = () => {
+      const startedAt = performance.now() + delay;
+      interval = window.setInterval(() => {
+        const now = performance.now();
+        if (now < startedAt) return;
+        const count = Math.min(text.length, Math.floor((now - startedAt) / speed));
+        if (count !== revealedRef.current) {
+          revealedRef.current = count;
+          setRevealed(count);
+        }
+        if (count >= text.length) {
+          window.clearInterval(interval);
+        }
+      }, 30);
     };
 
-    interval = window.setInterval(tick, 30);
-    return () => window.clearInterval(interval);
+    // Ditahan sampai splash selesai — kalau tidak, efeknya sudah habis
+    // bermain di balik splash.
+    const stop = onEnter(start);
+    return () => {
+      stop();
+      window.clearInterval(interval);
+    };
   }, [text, delay, speed]);
 
   let charIndex = 0;
