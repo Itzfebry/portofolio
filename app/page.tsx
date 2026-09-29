@@ -8,6 +8,7 @@ import Reveal from "@/components/ui/reveal";
 import ScrollFx from "@/components/ui/scroll-fx";
 import SectionBg from "@/components/ui/section-bg";
 import SiteNav from "@/components/ui/site-nav";
+import OpeningScreen from "@/components/ui/splash-screen";
 import TiltCard from "@/components/ui/tilt-card";
 import { getPortfolioData } from "@/lib/portfolio-data";
 
@@ -63,6 +64,7 @@ export default async function Home() {
 
   return (
     <>
+      <OpeningScreen />
       <SiteNav email={data.profile.email} />
       <ScrollFx />
 
