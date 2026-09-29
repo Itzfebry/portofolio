@@ -30,6 +30,8 @@ export type Project = {
   github_url?: string;
   cover_image?: string;
   technologies: string[];
+  role?: string;
+  photos?: string[];
 };
 
 export type Experience = {
@@ -119,6 +121,8 @@ const DEFAULT_PROJECTS: Project[] = [
     live_url: "https://example.com",
     github_url: "https://github.com",
     technologies: ["Next.js", "Supabase", "PostgreSQL"],
+    role: "Fullstack",
+    photos: [],
   },
   {
     id: "project-2",
@@ -131,6 +135,8 @@ const DEFAULT_PROJECTS: Project[] = [
     featured: false,
     github_url: "https://github.com",
     technologies: ["React", "Node.js", "PostgreSQL"],
+    role: "Fullstack",
+    photos: [],
   },
 ];
 
@@ -263,6 +269,8 @@ async function fetchDataFromSupabase(): Promise<PortfolioData | null> {
         github_url: typeof item.github_url === "string" ? item.github_url : undefined,
         cover_image: typeof item.cover_image === "string" ? item.cover_image : undefined,
         technologies: normalizeTechnologies(item.technologies),
+        role: typeof item.role === "string" ? item.role : "Fullstack",
+        photos: Array.isArray(item.photos) ? item.photos.filter((p): p is string => typeof p === "string" && p.length > 0) : [],
       })),
       experiences: (experienceResult.data ?? []).map((item: Record<string, unknown>) => ({
         id: String(item.id ?? crypto.randomUUID()),

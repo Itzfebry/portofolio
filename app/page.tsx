@@ -3,6 +3,7 @@ import { Mail, Share2 } from "lucide-react";
 import { GithubIcon, InstagramIcon, LinkedinIcon } from "@/components/ui/brand-icons";
 import HeroScene from "@/components/ui/hero-scene";
 import LiquidGlassShell from "@/components/ui/liquid-glass-shell";
+import ProjectCarousel from "@/components/ui/project-carousel";
 import Reveal from "@/components/ui/reveal";
 import ScrollFx from "@/components/ui/scroll-fx";
 import SectionBg from "@/components/ui/section-bg";
@@ -193,7 +194,9 @@ export default async function Home() {
                   <TiltCard className="glass h-full" max={7}>
                     <article className="project-card">
                       <div className="project-card__media">
-                        {project.cover_image ? (
+                        {project.photos && project.photos.length > 0 ? (
+                          <ProjectCarousel photos={project.photos} title={project.title} />
+                        ) : project.cover_image ? (
                           <img src={project.cover_image} alt={project.title} loading="lazy" />
                         ) : null}
                         <span className="project-card__badge">{project.status}</span>
@@ -205,7 +208,11 @@ export default async function Home() {
                           {project.featured ? <span className="tag">Featured</span> : null}
                         </div>
 
-                        <p className="mt-3 text-sm leading-6 text-zinc-400">{project.summary}</p>
+                        <p className="mt-2 text-xs font-medium uppercase tracking-[0.14em] text-cyan-300/80">
+                          {project.role ?? "Fullstack"}
+                        </p>
+
+                        <p className="mt-3 text-sm leading-6 text-zinc-400">{project.description}</p>
 
                         <div className="mt-4 flex flex-wrap gap-2">
                           {project.technologies.map((tech) => (

@@ -1455,6 +1455,55 @@ img { display: block; max-width: 100%; }
   color: rgba(228, 228, 231, .85);
 }
 
+.project-card__carousel {
+  position: relative;
+  height: 100%;
+  overflow: hidden;
+}
+
+.project-card__carousel-track {
+  display: flex;
+  height: 100%;
+  transition: transform .5s var(--ease);
+}
+
+.project-card__carousel-track img {
+  flex: 0 0 100%;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  opacity: .85;
+  transition: transform .9s var(--ease), opacity .6s ease;
+}
+
+.project-card:hover .project-card__carousel-track img {
+  transform: scale(1.07);
+  opacity: 1;
+}
+
+.project-card__carousel-dots {
+  position: absolute;
+  bottom: .6rem;
+  left: 50%;
+  transform: translateX(-50%);
+  display: flex;
+  gap: .35rem;
+  z-index: 2;
+}
+
+.project-card__carousel-dot {
+  width: .35rem;
+  height: .35rem;
+  border-radius: 999px;
+  background: rgba(255, 255, 255, .3);
+  transition: background .3s ease, width .3s ease;
+}
+
+.project-card__carousel-dot.is-active {
+  background: var(--cyan);
+  width: 1rem;
+}
+
 .project-card__body { display: flex; flex-direction: column; flex: 1; padding: 1.25rem 1rem 1rem; }
 
 .chip {

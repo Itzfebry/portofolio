@@ -98,6 +98,7 @@ export async function saveProject(
   const liveUrl = String(formData.get("live_url") ?? "").trim();
   const githubUrl = String(formData.get("github_url") ?? "").trim();
   const technologies = parseTechnologies(formData.get("technologies"));
+  const role = String(formData.get("role") ?? "").trim() || "Fullstack";
 
   if (!title || !summary || !description) {
     return { error: "Judul, ringkasan, dan deskripsi proyek wajib diisi." };
@@ -117,6 +118,64 @@ export async function saveProject(
   if (!slug) {
     return { error: "Slug proyek wajib diisi." };
   }
+
+  // Handle photo uploads — max 5 photos, max 500KB each
+  const existingPhotosRaw = String(formData.get("existing_photos") ?? "[]");
+  let existingPhotos: string[] = [];
+  try {
+    const parsed = JSON.parse(existingPhotosRaw);
+    if (Array.isArray(parsed)) {
+      existingPhotos = parsed.filter((p): p is string => typeof p === "string" && p.length > 0);
+    }
+  } catch {
+    existingPhotos = [];
+  }
+
+  const photoFiles: File[] = [];
+  const MAX_PHOTOS = 5;
+  const MAX_SIZE = 500 * 1024; // 500KB
+
+  for (let i = 0; i < MAX_PHOTOS; i++) {
+    const file = formData.get(`photo_${i}`);
+    if (file instanceof File && file.size > 0) {
+      if (!file.type.startsWith("image/")) {
+        return { error: `Foto ${i + 1} harus berupa gambar.` };
+      }
+      if (file.size > MAX_SIZE) {
+        return { error: `Foto ${i + 1} melebihi 500KB.` };
+      }
+      photoFiles.push(file);
+    }
+  }
+
+  const totalPhotos = existingPhotos.length + photoFiles.length;
+  if (totalPhotos < 1) {
+    return { error: "Minimal 1 foto proyek wajib diunggah." };
+  }
+  if (totalPhotos > MAX_PHOTOS) {
+    return { error: `Maksimal ${MAX_PHOTOS} foto per proyek.` };
+  }
+
+  // Upload new photos
+  const newPhotoUrls: string[] = [];
+  for (let i = 0; i < photoFiles.length; i++) {
+    const file = photoFiles[i];
+    const extension = file.name.split(".").pop()?.toLowerCase().replace(/[^a-z0-9]/g, "") || "jpg";
+    const photoPath = `${crypto.randomUUID()}.${extension}`;
+    const { error: uploadError } = await supabase.storage
+      .from("project-photos")
+      .upload(photoPath, file, { contentType: file.type, upsert: false });
+
+    if (uploadError) {
+      return { error: uploadError.message || `Foto ${i + 1} tidak dapat diunggah.` };
+    }
+
+    const publicUrl = supabase.storage.from("project-photos").getPublicUrl(photoPath).data.publicUrl;
+    newPhotoUrls.push(publicUrl);
+  }
+
+  const photos = [...existingPhotos, ...newPhotoUrls];
+
   const payload = {
     id: projectId || crypto.randomUUID(),
     title,
@@ -128,6 +187,8 @@ export async function saveProject(
     live_url: liveUrl || null,
     github_url: githubUrl || null,
     technologies,
+    role,
+    photos,
     updated_at: new Date().toISOString(),
   };
 
