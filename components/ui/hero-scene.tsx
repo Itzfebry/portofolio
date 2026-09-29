@@ -250,10 +250,7 @@ export default function HeroScene({ profile, socialLinks, stats }: HeroSceneProp
             />
           </p>
 
-          <p className="hero__lead hero-anim" style={{ "--d": "0.72s" } as CSSProperties}>
-            Building responsive web and mobile experiences with a focus on clean interfaces, practical
-            functionality, and user-centered design.
-          </p>
+          
 
           <div className="hero__cta hero-anim" style={{ "--d": "0.84s" } as CSSProperties}>
             <LiquidMetalButton

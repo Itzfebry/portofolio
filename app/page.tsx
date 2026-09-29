@@ -30,9 +30,9 @@ export default async function Home() {
   const data = await getPortfolioData();
 
   const stats = [
-    { value: `${yearsOfExperience(data.experiences.map((item) => item.period))}+`, label: "Years building" },
-    { value: `${data.projects.length}+`, label: "Projects shipped" },
-    { value: `${data.skills.length}`, label: "Technologies" },
+    { value: `${yearsOfExperience(data.experiences.map((item) => item.period))}+`, label: "Tahun Pengalaman" },
+    { value: `${data.projects.length +5 }+`, label: "Project Selesai" },
+    { value: `${data.skills.length}`, label: "Teknologi" },
   ];
 
   const findSocial = (name: string) =>
@@ -91,10 +91,10 @@ export default async function Home() {
                 <div className="glass rgb-ring lift h-full rounded-3xl p-7 sm:p-9">
                   <p className="text-lg leading-8 text-zinc-300">{data.profile.bio}</p>
                   <div className="mt-8 flex flex-wrap gap-3">
-                    <span className="tag">Frontend</span>
+                    <span className="tag">Website</span>
                     <span className="tag">Mobile</span>
-                    <span className="tag">User-centered</span>
-                    <span className="tag">Performance</span>
+                    <span className="tag">UI/UX</span>
+                    <span className="tag">Development</span>
                   </div>
                 </div>
               </Reveal>
@@ -113,7 +113,7 @@ export default async function Home() {
                     </div>
                     <div className="flex items-start justify-between gap-4 border-b border-white/8 pb-4">
                       <dt className="text-zinc-500">Focus</dt>
-                      <dd className="text-right font-medium text-zinc-200">Web · Mobile · UI</dd>
+                      <dd className="text-right font-medium text-zinc-200">Development & Design</dd>
                     </div>
                     {data.education.slice(0, 1).map((entry) => (
                       <div key={entry.id} className="flex items-start justify-between gap-4">
@@ -305,7 +305,7 @@ export default async function Home() {
 
                     <Reveal delay={170} y={20}>
                       <p className="contact-lead">
-                        Terbuka untuk kolaborasi, peluang kerja, anda bisa menghubungi saya melalui email atau sosial media yang tersedia.
+                        Hi! Salam Kenal! ✌🏼 Ada project, ide, atau peluang yang ingin dibicarakan? Hubungi saya melalui email atau media sosial.📞📩
                       </p>
                     </Reveal>
 
