@@ -93,6 +93,13 @@ export function ProjectForm({ project }: { project?: Project }) {
     photoPreviews.filter((p) => p.startsWith("http")),
   );
 
+  /**
+   * ID unik per form. Form "Tambah" dan form edit dirender bersamaan di halaman
+   * yang sama, jadi id harus berbeda — kalau sama, htmlFor akan mengaktifkan
+   * input milik form lain dan file tidak pernah masuk ke form edit.
+   */
+  const inputId = (i: number) => `project-photo-${project?.id ?? "new"}-${i}`;
+
   return (
     <form action={formAction} onSubmit={() => setDismissed(false)} className="grid gap-4 md:grid-cols-2">
       <input name="id" type="hidden" value={project?.id ?? ""} />
@@ -205,7 +212,7 @@ export function ProjectForm({ project }: { project?: Project }) {
             <div key={i} className="relative">
               {/* Selalu dirender dan selalu punya name, supaya file ikut terkirim ke server. */}
               <input
-                id={`project-photo-${i}`}
+                id={inputId(i)}
                 name={`photo_${i}`}
                 type="file"
                 accept="image/*"
@@ -219,7 +226,7 @@ export function ProjectForm({ project }: { project?: Project }) {
               {preview ? (
                 <div className="group relative aspect-square overflow-hidden rounded-xl border border-zinc-700">
                   <label
-                    htmlFor={`project-photo-${i}`}
+                    htmlFor={inputId(i)}
                     className="block h-full w-full cursor-pointer"
                     title={`Ganti foto ${i + 1}`}
                   >
@@ -238,7 +245,7 @@ export function ProjectForm({ project }: { project?: Project }) {
                 </div>
               ) : (
                 <label
-                  htmlFor={`project-photo-${i}`}
+                  htmlFor={inputId(i)}
                   className="flex aspect-square cursor-pointer items-center justify-center rounded-xl border border-dashed border-zinc-700 bg-zinc-900/50 transition hover:border-emerald-400/50 hover:bg-zinc-900"
                 >
                   <span className="text-xs text-zinc-500">+ Foto</span>
