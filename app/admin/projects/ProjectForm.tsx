@@ -1,6 +1,7 @@
+/* eslint-disable @next/next/no-img-element */
 "use client";
 
-import { useActionState, useEffect, useState } from "react";
+import { useActionState, useEffect, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 
 import { saveProject } from "../actions";
@@ -11,6 +12,17 @@ type AdminSaveState = {
   success?: string;
 };
 
+const MAX_PHOTOS = 5;
+
+/** Slot selalu berjumlah 5 dan tidak pernah di-reindex, supaya name photo_0..photo_4 stabil. */
+function padPhotos(list?: string[]): string[] {
+  const slots: string[] = Array(MAX_PHOTOS).fill("");
+  (list ?? []).slice(0, MAX_PHOTOS).forEach((photo, i) => {
+    slots[i] = photo;
+  });
+  return slots;
+}
+
 export function ProjectForm({ project }: { project?: Project }) {
   const router = useRouter();
   const [state, formAction, isPending] = useActionState<AdminSaveState, FormData>(
@@ -18,16 +30,32 @@ export function ProjectForm({ project }: { project?: Project }) {
     {},
   );
   const [dismissed, setDismissed] = useState(false);
-  const [photoPreviews, setPhotoPreviews] = useState<string[]>(project?.photos ?? []);
-  const [newPhotos, setNewPhotos] = useState<File[]>([]);
+  const inputRefs = useRef<(HTMLInputElement | null)[]>([]);
+  const [photoPreviews, setPhotoPreviews] = useState<string[]>(() => padPhotos(project?.photos));
 
+  const clearInputs = () => {
+    inputRefs.current.forEach((input) => {
+      if (input) input.value = "";
+    });
+  };
+
+  /** Foto terakhir yang diketahui dari server — dipakai untuk deteksi data baru hasil refresh. */
+  const knownPhotos = useRef<string[] | undefined>(project?.photos);
+
+  // Simpan sukses → minta data terbaru. Tidak bergantung pada project.photos
+  // sehingga tidak memicu refresh berulang.
   useEffect(() => {
-    if (state.success) {
-      router.refresh();
-      setPhotoPreviews(project?.photos ?? []);
-      setNewPhotos([]);
-    }
-  }, [router, state.success, project?.photos]);
+    if (state.success) router.refresh();
+  }, [state, router]);
+
+  // Server sudah mengembalikan foto tersimpan → sinkronkan slot & bersihkan input file,
+  // supaya preview data-URL tidak tertinggal dan menyebabkan foto hilang saat submit ulang.
+  useEffect(() => {
+    if (project?.photos === knownPhotos.current) return;
+    knownPhotos.current = project?.photos;
+    setPhotoPreviews(padPhotos(project?.photos));
+    clearInputs();
+  }, [project?.photos]);
 
   const handlePhotoChange = (index: number, file: File | null) => {
     if (!file) return;
@@ -39,21 +67,26 @@ export function ProjectForm({ project }: { project?: Project }) {
       alert("Ukuran foto maksimal 500KB.");
       return;
     }
-    const updated = [...newPhotos];
-    updated[index] = file;
-    setNewPhotos(updated);
     const reader = new FileReader();
     reader.onload = (e) => {
-      const previews = [...photoPreviews];
-      previews[index] = e.target?.result as string;
-      setPhotoPreviews(previews);
+      const preview = e.target?.result as string;
+      setPhotoPreviews((prev) => {
+        const next = [...prev];
+        next[index] = preview;
+        return next;
+      });
     };
     reader.readAsDataURL(file);
   };
 
   const removePhoto = (index: number) => {
-    setPhotoPreviews(photoPreviews.filter((_, i) => i !== index));
-    setNewPhotos(newPhotos.filter((_, i) => i !== index));
+    const input = inputRefs.current[index];
+    if (input) input.value = "";
+    setPhotoPreviews((prev) => {
+      const next = [...prev];
+      next[index] = "";
+      return next;
+    });
   };
 
   const existingPhotosJson = JSON.stringify(
@@ -163,20 +196,39 @@ export function ProjectForm({ project }: { project?: Project }) {
         />
       </label>
 
-      <label className="md:col-span-2">
+      <div className="md:col-span-2">
         <span className="mb-2 block text-sm text-zinc-300">
           Foto proyek (maks 5 foto, maks 500KB per foto)
         </span>
         <div className="grid gap-3 sm:grid-cols-5">
-          {Array.from({ length: 5 }).map((_, i) => (
+          {photoPreviews.map((preview, i) => (
             <div key={i} className="relative">
-              {photoPreviews[i] ? (
+              {/* Selalu dirender dan selalu punya name, supaya file ikut terkirim ke server. */}
+              <input
+                id={`project-photo-${i}`}
+                name={`photo_${i}`}
+                type="file"
+                accept="image/*"
+                className="hidden"
+                ref={(el) => {
+                  inputRefs.current[i] = el;
+                }}
+                onChange={(e) => handlePhotoChange(i, e.target.files?.[0] ?? null)}
+              />
+
+              {preview ? (
                 <div className="group relative aspect-square overflow-hidden rounded-xl border border-zinc-700">
-                  <img src={photoPreviews[i]} alt={`Foto ${i + 1}`} className="h-full w-full object-cover" />
+                  <label
+                    htmlFor={`project-photo-${i}`}
+                    className="block h-full w-full cursor-pointer"
+                    title={`Ganti foto ${i + 1}`}
+                  >
+                    <img src={preview} alt={`Foto ${i + 1}`} className="h-full w-full object-cover" />
+                  </label>
                   <button
                     type="button"
                     onClick={() => removePhoto(i)}
-                    className="absolute right-1 top-1 rounded-full bg-red-500/80 p-1 text-white opacity-0 transition group-hover:opacity-100"
+                    className="absolute right-1 top-1 z-10 rounded-full bg-red-500/80 p-1 text-white opacity-0 transition group-hover:opacity-100"
                     aria-label={`Hapus foto ${i + 1}`}
                   >
                     <svg className="h-3 w-3" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
@@ -185,20 +237,17 @@ export function ProjectForm({ project }: { project?: Project }) {
                   </button>
                 </div>
               ) : (
-                <label className="flex aspect-square cursor-pointer items-center justify-center rounded-xl border border-dashed border-zinc-700 bg-zinc-900/50 transition hover:border-emerald-400/50 hover:bg-zinc-900">
-                  <input
-                    type="file"
-                    accept="image/*"
-                    className="hidden"
-                    onChange={(e) => handlePhotoChange(i, e.target.files?.[0] ?? null)}
-                  />
+                <label
+                  htmlFor={`project-photo-${i}`}
+                  className="flex aspect-square cursor-pointer items-center justify-center rounded-xl border border-dashed border-zinc-700 bg-zinc-900/50 transition hover:border-emerald-400/50 hover:bg-zinc-900"
+                >
                   <span className="text-xs text-zinc-500">+ Foto</span>
                 </label>
               )}
             </div>
           ))}
         </div>
-      </label>
+      </div>
 
       <label className="flex items-center gap-3 rounded-xl border border-zinc-700 bg-zinc-900 px-3 py-2.5 text-sm text-zinc-200 md:col-span-1">
         <input
