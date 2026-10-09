@@ -1,4 +1,4 @@
-import { createServerSupabaseClient } from "@/lib/supabase/server";
+import { createPublicSupabaseClient } from "@/lib/supabase/public";
 
 export type Profile = {
   name: string;
@@ -206,7 +206,7 @@ function normalizeTechnologies(input: unknown): string[] {
 }
 
 async function fetchDataFromSupabase(): Promise<PortfolioData | null> {
-  const supabase = await createServerSupabaseClient();
+  const supabase = createPublicSupabaseClient();
 
   if (!process.env.NEXT_PUBLIC_SUPABASE_URL || !process.env.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY) {
     return null;

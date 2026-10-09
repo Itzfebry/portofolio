@@ -11,8 +11,10 @@ import SiteNav from "@/components/ui/site-nav";
 import OpeningScreen from "@/components/ui/splash-screen";
 import TiltCard from "@/components/ui/tilt-card";
 import { getPortfolioData } from "@/lib/portfolio-data";
+import { SITE_LANG, SITE_NAME, SITE_URL } from "@/lib/site";
 
-export const dynamic = "force-dynamic";
+// Static shell + ISR: content refreshes every 5 minutes and instantly on admin save (revalidatePath).
+export const revalidate = 300;
 
 function ArrowUpRight({ className = "arrow h-4 w-4" }: { className?: string }) {
   return (
@@ -62,8 +64,78 @@ export default async function Home() {
     },
   ];
 
+  const personId = `${SITE_URL}/#person`;
+
+  const jsonLd = {
+    "@context": "https://schema.org",
+    "@graph": [
+      {
+        "@type": "Person",
+        "@id": personId,
+        name: data.profile.name,
+        alternateName: SITE_NAME,
+        url: SITE_URL,
+        jobTitle: data.profile.role,
+        description: data.profile.bio,
+        email: `mailto:${data.profile.email}`,
+        image: data.profile.avatar_url ?? `${SITE_URL}/images/Febry.png`,
+        address: {
+          "@type": "PostalAddress",
+          addressLocality: data.profile.location,
+        },
+        worksFor: {
+          "@type": "Organization",
+          name: SITE_NAME,
+        },
+        knowsAbout: data.skills.map((skill) => skill.name),
+        sameAs: data.socialLinks.map((link) => link.url).filter((url) => url.startsWith("http")),
+      },
+      {
+        "@type": "WebSite",
+        "@id": `${SITE_URL}/#website`,
+        url: SITE_URL,
+        name: SITE_NAME,
+        inLanguage: SITE_LANG,
+        description: data.profile.bio,
+        publisher: { "@id": personId },
+        primaryImageOfPage: `${SITE_URL}/images/Febry.png`,
+      },
+      {
+        "@type": "ProfilePage",
+        "@id": `${SITE_URL}/#profilepage`,
+        url: SITE_URL,
+        inLanguage: SITE_LANG,
+        isPartOf: { "@id": `${SITE_URL}/#website` },
+        mainEntity: { "@id": personId },
+      },
+      {
+        "@type": "ItemList",
+        name: "Project",
+        numberOfItems: data.projects.length,
+        itemListElement: data.projects.map((project, index) => ({
+          "@type": "ListItem",
+          position: index + 1,
+          item: {
+            "@type": "CreativeWork",
+            name: project.title,
+            description: project.description,
+            url: project.live_url ?? project.github_url ?? SITE_URL,
+            keywords: project.technologies.join(", "),
+            author: { "@id": personId },
+          },
+        })),
+      },
+    ],
+  };
+
   return (
     <>
+      <script
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{
+          __html: JSON.stringify(jsonLd).replace(/</g, "\\u003c"),
+        }}
+      />
       <OpeningScreen />
       <SiteNav email={data.profile.email} />
       <ScrollFx />
