@@ -2490,6 +2490,17 @@ html:not(.is-entered) .hero__char { opacity: 0; }
 
 .cert-card__open { margin-top: .8rem; font-size: .85rem; }
 
+/* Kartu bertumpuk (offset > 0): hanya pelat media yang menonjol di belakang
+   kartu aktif. Body/badge disembunyikan agar teksnya tidak tembus lewat
+   kartu aktif yang transparan — alpha glass tidak diubah. */
+.cert-card--stacked .cert-card__body,
+.cert-card--stacked .cert-card__badge {
+  visibility: hidden;
+  /* visible → hidden bertahan sampai animasi kartu selesai, lalu hilang;
+     hidden → visible muncul langsung saat kartu jadi aktif. */
+  transition: visibility .45s;
+}
+
 .cert-controls {
   display: flex;
   align-items: center;

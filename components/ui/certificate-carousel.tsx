@@ -104,7 +104,7 @@ export default function CertificateCarousel({ items }: Props) {
           return (
             <article
               key={item.id}
-              className="cert-card glass rgb-ring"
+              className={`cert-card glass rgb-ring ${offset !== 0 ? "cert-card--stacked" : ""}`}
               style={style}
               aria-hidden={offset !== 0}
               aria-label={`${index + 1} dari ${total}: ${item.title}`}
