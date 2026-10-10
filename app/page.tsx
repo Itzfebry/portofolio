@@ -1,5 +1,7 @@
 /* eslint-disable @next/next/no-img-element */
 import { Mail, Share2 } from "lucide-react";
+import Link from "next/link";
+
 import { GithubIcon, InstagramIcon, LinkedinIcon } from "@/components/ui/brand-icons";
 import HeroScene from "@/components/ui/hero-scene";
 import LiquidGlassShell from "@/components/ui/liquid-glass-shell";
@@ -296,7 +298,13 @@ export default async function Home() {
                           ))}
                         </div>
 
-                        <div className="mt-auto flex gap-5 pt-6 text-sm">
+                        <div className="mt-auto flex flex-wrap gap-5 pt-6 text-sm">
+                          <Link
+                            href={`/project/${project.slug}`}
+                            className="link-arrow text-white hover:text-cyan-200"
+                          >
+                            View detail <ArrowUpRight />
+                          </Link>
                           {project.live_url && (
                             <a
                               href={project.live_url}

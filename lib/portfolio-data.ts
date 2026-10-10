@@ -32,6 +32,11 @@ export type Project = {
   technologies: string[];
   role?: string;
   photos?: string[];
+  /** Detail page (/project/[slug]) */
+  year?: string;
+  client?: string;
+  highlights?: string[];
+  detail_description?: string;
 };
 
 export type Experience = {
@@ -63,6 +68,18 @@ export type SocialLink = {
   platform: string;
   url: string;
   label: string;
+};
+
+export type Certificate = {
+  id: string;
+  title: string;
+  issuer: string;
+  issued_at?: string;
+  credential_id?: string;
+  category: string;
+  file_url: string;
+  file_type: "image" | "pdf";
+  sort_order: number;
 };
 
 export type PortfolioData = {
@@ -271,6 +288,13 @@ async function fetchDataFromSupabase(): Promise<PortfolioData | null> {
         technologies: normalizeTechnologies(item.technologies),
         role: typeof item.role === "string" ? item.role : "Fullstack",
         photos: Array.isArray(item.photos) ? item.photos.filter((p): p is string => typeof p === "string" && p.length > 0) : [],
+        year: typeof item.year === "string" ? item.year : undefined,
+        client: typeof item.client === "string" ? item.client : undefined,
+        highlights: Array.isArray(item.highlights)
+          ? item.highlights.filter((h): h is string => typeof h === "string" && h.length > 0)
+          : [],
+        detail_description:
+          typeof item.detail_description === "string" ? item.detail_description : undefined,
       })),
       experiences: (experienceResult.data ?? []).map((item: Record<string, unknown>) => ({
         id: String(item.id ?? crypto.randomUUID()),
@@ -329,4 +353,48 @@ export async function getPortfolioData(): Promise<PortfolioData> {
     services: DEFAULT_SERVICES,
     socialLinks: DEFAULT_SOCIALS,
   };
+}
+
+/**
+ * Sertifikat diambil terpisah dari data utama: kalau tabel `certificates`
+ * belum dibuat (migration belum jalan), halaman lain tetap normal.
+ */
+export async function getCertificates(): Promise<Certificate[]> {
+  if (!process.env.NEXT_PUBLIC_SUPABASE_URL || !process.env.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY) {
+    return [];
+  }
+
+  try {
+    const supabase = createPublicSupabaseClient();
+    const { data, error } = await supabase
+      .from("certificates")
+      .select("*")
+      .order("sort_order", { ascending: true })
+      .order("created_at", { ascending: false });
+
+    if (error || !data) return [];
+
+    const certificates: Certificate[] = [];
+
+    for (const item of data as Record<string, unknown>[]) {
+      const fileUrl = typeof item.file_url === "string" ? item.file_url : "";
+      if (!/^https?:\/\//.test(fileUrl)) continue;
+
+      certificates.push({
+        id: String(item.id ?? crypto.randomUUID()),
+        title: String(item.title ?? "Sertifikat"),
+        issuer: String(item.issuer ?? ""),
+        issued_at: typeof item.issued_at === "string" ? item.issued_at : undefined,
+        credential_id: typeof item.credential_id === "string" ? item.credential_id : undefined,
+        category: String(item.category ?? "Lainnya"),
+        file_url: fileUrl,
+        file_type: item.file_type === "pdf" ? "pdf" : "image",
+        sort_order: Number(item.sort_order ?? 0),
+      });
+    }
+
+    return certificates;
+  } catch {
+    return [];
+  }
 }

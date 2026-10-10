@@ -32,7 +32,7 @@ const DESCRIPTION =
 export const metadata: Metadata = {
   metadataBase: new URL(SITE_URL),
   title: {
-    default: "ItzFebryHcx | Portofolio Frontend Developer — Mochammad Ginata Febryansyah",
+    default: "ItzFebryHcx | Portofolio — Mochammad Ginata Febryansyah",
     template: "%s | ItzFebryHcx",
   },
   description: DESCRIPTION,
@@ -59,12 +59,12 @@ export const metadata: Metadata = {
     locale: SITE_LOCALE,
     url: SITE_URL,
     siteName: SITE_NAME,
-    title: "ItzFebryHcx | Portofolio Frontend Developer",
+    title: "ItzFebryHcx | Portofolio",
     description: DESCRIPTION,
   },
   twitter: {
     card: "summary_large_image",
-    title: "ItzFebryHcx | Portofolio Frontend Developer",
+    title: "ItzFebryHcx | Portofolio",
     description: DESCRIPTION,
   },
   robots: {

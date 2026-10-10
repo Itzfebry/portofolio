@@ -6,11 +6,11 @@ import { useEffect, useRef, useState } from "react";
 import { LiquidMetalButton } from "@/components/ui/liquid-metal-button";
 
 const LINKS = [
-  { id: "about", label: "About" },
-  { id: "skills", label: "Skills" },
-  { id: "projects", label: "Projects" },
-  { id: "experience", label: "Experience" },
-  { id: "contact", label: "Contact" },
+  { id: "about", label: "About", href: "#about" },
+  { id: "skills", label: "Skills", href: "#skills" },
+  { id: "projects", label: "Projects", href: "#projects" },
+  { id: "experience", label: "Experience", href: "#experience" },
+  { id: "contact", label: "Contact", href: "#contact" },
 ];
 
 /** A link becomes active once its top edge is this far above the viewport top. */
@@ -131,7 +131,7 @@ export default function SiteNav({ email }: { email: string }) {
 
         <nav className="site-nav__links" aria-label="Sections">
           {LINKS.map((link) => (
-            <a key={link.id} href={`#${link.id}`} className={active === link.id ? "is-active" : ""}>
+            <a key={link.id} href={link.href} className={active === link.id ? "is-active" : ""}>
               {link.label}
             </a>
           ))}
@@ -168,7 +168,7 @@ export default function SiteNav({ email }: { email: string }) {
           {LINKS.map((link) => (
             <a
               key={link.id}
-              href={`#${link.id}`}
+              href={link.href}
               className={active === link.id ? "is-active" : ""}
               onClick={() => setOpen(false)}
             >

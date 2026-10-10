@@ -11,8 +11,10 @@ interface LiquidMetalButtonProps {
   label?: string;
   onClick?: () => void;
   viewMode?: "text" | "icon";
-  /** "light" = white plate with black text, "metal" = dark liquid-metal face. */
-  variant?: "metal" | "light";
+  /** Icon lucide di kiri label (hanya untuk viewMode "text"). */
+  icon?: React.ReactNode;
+  /** "light" = white plate with black text, "metal" = dark liquid-metal face, "ghost" = plate transparan tanpa isian. */
+  variant?: "metal" | "light" | "ghost";
   /** Override the label colour (defaults depend on the variant). */
   labelColor?: string;
   /** Override the label font weight (default 400). */
@@ -28,26 +30,36 @@ export function LiquidMetalButton({
   label = "Get Started",
   onClick,
   viewMode = "text",
+  icon,
   variant = "metal",
   labelColor,
   labelWeight,
 }: LiquidMetalButtonProps) {
   const isLight = variant === "light";
-  const textColor = labelColor ?? (isLight ? "#08080a" : "#666666");
+  const isGhost = variant === "ghost";
+  const textColor = labelColor ?? (isGhost ? "#f4f4f5" : isLight ? "#08080a" : "#666666");
   const textWeight = labelWeight ?? 400;
-  const textShadow = isLight
-    ? "0px 1px 2px rgba(0, 0, 0, 0.12)"
-    : "0px 1px 2px rgba(0, 0, 0, 0.5)";
-  const iconShadow = isLight
-    ? "drop-shadow(0px 1px 1px rgba(0, 0, 0, 0.18))"
-    : "drop-shadow(0px 1px 2px rgba(0, 0, 0, 0.5))";
-  const hoverTextColor = isLight ? "#000000" : "#67e8f9";
-  const plateBackground = isLight
-    ? "linear-gradient(180deg, #ffffff 0%, #e8e8ee 100%)"
-    : "linear-gradient(180deg, #202020 0%, #000000 100%)";
-  const plateHoverBackground = isLight
-    ? "linear-gradient(180deg, #f3feff 0%, #d6f4fb 100%)"
-    : "linear-gradient(180deg, #2f3a3f 0%, #05080b 100%)";
+  const textShadow = isGhost
+    ? "none"
+    : isLight
+      ? "0px 1px 2px rgba(0, 0, 0, 0.12)"
+      : "0px 1px 2px rgba(0, 0, 0, 0.5)";
+  const iconShadow = isGhost
+    ? "none"
+    : isLight
+      ? "drop-shadow(0px 1px 1px rgba(0, 0, 0, 0.18))"
+      : "drop-shadow(0px 1px 2px rgba(0, 0, 0, 0.5))";
+  const hoverTextColor = isGhost || !isLight ? "#67e8f9" : "#000000";
+  const plateBackground = isGhost
+    ? "transparent"
+    : isLight
+      ? "linear-gradient(180deg, #ffffff 0%, #e8e8ee 100%)"
+      : "linear-gradient(180deg, #202020 0%, #000000 100%)";
+  const plateHoverBackground = isGhost
+    ? "rgba(255, 255, 255, 0.07)"
+    : isLight
+      ? "linear-gradient(180deg, #f3feff 0%, #d6f4fb 100%)"
+      : "linear-gradient(180deg, #2f3a3f 0%, #05080b 100%)";
 
   const [isHovered, setIsHovered] = useState(false);
   const [isPressed, setIsPressed] = useState(false);
@@ -70,18 +82,24 @@ export function LiquidMetalButton({
         shaderHeight: 46,
       };
     } else {
+      // Icon + label butuh lebar ekstra, kalau tidak label terpotong.
+      const width = 142 + (icon ? 30 : 0);
       return {
-        width: 142,
+        width,
         height: 46,
-        innerWidth: 138,
+        innerWidth: width - 4,
         innerHeight: 42,
-        shaderWidth: 142,
+        shaderWidth: width,
         shaderHeight: 46,
       };
     }
-  }, [viewMode]);
+  }, [viewMode, icon]);
 
   useEffect(() => {
+    // Variant ghost: plate transparan, shader logam tidak dipakai — jangan
+    // di-load sama sekali (hemat dinamis-import + kerja canvas).
+    if (isGhost) return;
+
     const styleId = "shader-canvas-style-exploded";
     if (!document.getElementById(styleId)) {
       const style = document.createElement("style");
@@ -154,7 +172,7 @@ export function LiquidMetalButton({
         shaderMount.current = null;
       }
     };
-  }, []);
+  }, [isGhost]);
 
   const handleMouseEnter = () => {
     setIsHovered(true);
@@ -208,8 +226,7 @@ export function LiquidMetalButton({
             width: `${dimensions.width}px`,
             height: `${dimensions.height}px`,
             transformStyle: "preserve-3d",
-            transition:
-              "all 0.8s cubic-bezier(0.34, 1.56, 0.64, 1), width 0.4s ease, height 0.4s ease",
+            transition: "all 0.8s cubic-bezier(0.34, 1.56, 0.64, 1), width 0.4s ease, height 0.4s ease",
             transform: isHovered ? "scale(1.05)" : "none",
           }}
         >
@@ -246,17 +263,39 @@ export function LiquidMetalButton({
             {viewMode === "text" && (
               <span
                 style={{
-                  fontSize: "14px",
-                  color: isHovered ? hoverTextColor : textColor,
-                  fontWeight: textWeight,
-                  letterSpacing: isHovered ? "0.05em" : "0em",
-                  textShadow: textShadow,
-                  transition: "all 0.8s cubic-bezier(0.34, 1.56, 0.64, 1)",
-                  transform: isHovered ? "translateY(-1px) scale(1.06)" : "scale(1)",
-                  whiteSpace: "nowrap",
+                  display: "inline-flex",
+                  alignItems: "center",
+                  gap: "6px",
                 }}
               >
-                {label}
+                {icon ? (
+                  <span
+                    style={{
+                      display: "inline-flex",
+                      color: isHovered ? hoverTextColor : textColor,
+                      filter: iconShadow,
+                      transition: "all 0.8s cubic-bezier(0.34, 1.56, 0.64, 1)",
+                      transform: isHovered ? "scale(1.18) rotate(-10deg)" : "scale(1)",
+                    }}
+                    aria-hidden="true"
+                  >
+                    {icon}
+                  </span>
+                ) : null}
+                <span
+                  style={{
+                    fontSize: "14px",
+                    color: isHovered ? hoverTextColor : textColor,
+                    fontWeight: textWeight,
+                    letterSpacing: isHovered ? "0.05em" : "0em",
+                    textShadow: textShadow,
+                    transition: "all 0.8s cubic-bezier(0.34, 1.56, 0.64, 1)",
+                    transform: isHovered ? "translateY(-1px) scale(1.06)" : "scale(1)",
+                    whiteSpace: "nowrap",
+                  }}
+                >
+                  {label}
+                </span>
               </span>
             )}
           </div>
@@ -269,8 +308,7 @@ export function LiquidMetalButton({
               width: `${dimensions.width}px`,
               height: `${dimensions.height}px`,
               transformStyle: "preserve-3d",
-              transition:
-                "all 0.8s cubic-bezier(0.34, 1.56, 0.64, 1), width 0.4s ease, height 0.4s ease",
+              transition: "all 0.8s cubic-bezier(0.34, 1.56, 0.64, 1), width 0.4s ease, height 0.4s ease",
               transform: `translateZ(10px) ${isPressed ? "translateY(1px) scale(0.98)" : "translateY(0) scale(1)"}`,
               zIndex: 20,
             }}
@@ -281,6 +319,9 @@ export function LiquidMetalButton({
                 height: `${dimensions.innerHeight}px`,
                 margin: "2px",
                 borderRadius: "100px",
+                border: isGhost
+                  ? `1px solid ${isHovered ? "rgba(103, 232, 249, 0.55)" : "rgba(255, 255, 255, 0.16)"}`
+                  : "none",
                 background: isHovered ? plateHoverBackground : plateBackground,
                 boxShadow: isPressed
                   ? "inset 0px 2px 4px rgba(0, 0, 0, 0.4), inset 0px 1px 2px rgba(0, 0, 0, 0.3)"

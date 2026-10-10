@@ -203,6 +203,56 @@ export function ProjectForm({ project }: { project?: Project }) {
         />
       </label>
 
+      <div className="md:col-span-2 rounded-xl border border-emerald-500/20 bg-emerald-500/5 p-4">
+        <p className="text-xs uppercase tracking-[0.2em] text-emerald-400">Detail proyek</p>
+        <p className="mt-1 text-xs text-zinc-500">
+          Isian ini tampil di halaman publik <span className="text-zinc-300">/project/{project?.slug ?? "slug"}</span>
+        </p>
+
+        <div className="mt-4 grid gap-4 md:grid-cols-2">
+          <label className="md:col-span-1">
+            <span className="mb-2 block text-sm text-zinc-300">Tahun</span>
+            <input
+              name="year"
+              defaultValue={project?.year ?? ""}
+              className="w-full rounded-xl border border-zinc-700 bg-zinc-900 px-3 py-2.5 text-white outline-none focus:border-emerald-400"
+              placeholder="2025"
+            />
+          </label>
+
+          <label className="md:col-span-1">
+            <span className="mb-2 block text-sm text-zinc-300">Klien</span>
+            <input
+              name="client"
+              defaultValue={project?.client ?? ""}
+              className="w-full rounded-xl border border-zinc-700 bg-zinc-900 px-3 py-2.5 text-white outline-none focus:border-emerald-400"
+              placeholder="Nama klien / perusahaan"
+            />
+          </label>
+
+          <label className="md:col-span-2">
+            <span className="mb-2 block text-sm text-zinc-300">Highlight (pisahkan dengan koma)</span>
+            <input
+              name="highlights"
+              defaultValue={project?.highlights?.join(", ") ?? ""}
+              className="w-full rounded-xl border border-zinc-700 bg-zinc-900 px-3 py-2.5 text-white outline-none focus:border-emerald-400"
+              placeholder="Lighthouse 98, Dark mode, API caching"
+            />
+          </label>
+
+          <label className="md:col-span-2">
+            <span className="mb-2 block text-sm text-zinc-300">Deskripsi detail (opsional)</span>
+            <textarea
+              name="detail_description"
+              rows={4}
+              defaultValue={project?.detail_description ?? ""}
+              className="w-full rounded-xl border border-zinc-700 bg-zinc-900 px-3 py-2.5 text-white outline-none focus:border-emerald-400"
+              placeholder="Cerita panjang project: masalah, proses, hasil."
+            />
+          </label>
+        </div>
+      </div>
+
       <div className="md:col-span-2">
         <span className="mb-2 block text-sm text-zinc-300">
           Foto proyek (maks 5 foto, maks 500KB per foto)

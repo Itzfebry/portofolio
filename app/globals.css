@@ -262,6 +262,9 @@ img { display: block; max-width: 100%; }
 
 @media (min-width: 900px) {
   .site-nav__toggle { display: none; }
+  /* Tanpa actions, space-between mendorong .site-nav__links rata kanan —
+     posisi identik dengan navbar beranda. */
+  .site-nav__actions { display: none; }
 }
 
 .site-nav__mobile {
@@ -2328,4 +2331,293 @@ html:not(.is-entered) .hero__char { opacity: 0; }
   .hero__title:hover .hero__line { filter: none; }
   .hero-anim, .hero__scene-wrap { opacity: 1; }
   .tilt { transform: none; }
+}
+
+/* ================================================================
+   Halaman baru: /certificate dan /project
+   ================================================================ */
+
+/* Latar khusus halaman project — beda dari beranda, tetap satu nada gelap */
+.section--saber {
+  background:
+    radial-gradient(ellipse 55% 40% at 12% 0%, rgba(103, 232, 249, .07), transparent 70%),
+    radial-gradient(ellipse 50% 45% at 88% 18%, rgba(167, 139, 250, .07), transparent 70%),
+    radial-gradient(ellipse 70% 50% at 50% 108%, rgba(249, 168, 212, .05), transparent 70%),
+    #040406;
+}
+
+/* ---------------------------------------------------------------- saber */
+/* Bilah cahaya panjang: berotasi random (dari seed) + opacity berdenyut. */
+
+.saber {
+  position: absolute;
+  inset: 0;
+  overflow: hidden;
+  pointer-events: none;
+  z-index: 0;
+}
+
+.saber-field {
+  -webkit-mask-image: radial-gradient(ellipse 75% 70% at 50% 45%, #000 25%, transparent 88%);
+  mask-image: radial-gradient(ellipse 75% 70% at 50% 45%, #000 25%, transparent 88%);
+}
+
+.saber__beam {
+  position: absolute;
+  left: var(--saber-x);
+  top: var(--saber-y);
+  width: var(--saber-w);
+  height: var(--saber-thick);
+  transform-origin: 0 50%;
+  border-radius: 999px;
+  background: linear-gradient(
+    90deg,
+    transparent 0%,
+    hsla(var(--saber-hue), 95%, 70%, .15) 18%,
+    hsla(var(--saber-hue), 96%, 72%, .85) 62%,
+    #ffffff 90%,
+    transparent 100%
+  );
+  box-shadow: 0 0 22px hsla(var(--saber-hue), 95%, 65%, .5);
+  opacity: var(--saber-alpha);
+  animation-name: saber-spin, saber-pulse;
+  animation-duration: var(--saber-spin), var(--saber-pulse);
+  animation-timing-function: linear, ease-in-out;
+  animation-iteration-count: infinite, infinite;
+  animation-direction: var(--saber-dir), alternate;
+  animation-delay: var(--saber-delay), var(--saber-delay);
+  animation-fill-mode: both, both;
+}
+
+@keyframes saber-spin {
+  from { transform: rotate(var(--saber-angle)); }
+  to { transform: rotate(calc(var(--saber-angle) + 360deg)); }
+}
+
+@keyframes saber-pulse {
+  0%, 100% { opacity: calc(var(--saber-alpha) * .3); }
+  50% { opacity: var(--saber-alpha); }
+}
+
+/* Kartu project membawa sabernya sendiri, lebih pelan dari latar halaman. */
+.project-tile .saber { opacity: .5; }
+
+@media (prefers-reduced-motion: reduce) {
+  .saber__beam { animation: none; opacity: .35; }
+}
+
+/* -------------------------------------------------------- carousel sertifikat */
+
+.cert-carousel { position: relative; }
+
+.cert-deck {
+  position: relative;
+  height: clamp(25rem, 62vh, 36rem);
+  touch-action: pan-y;
+  outline: none;
+}
+
+.cert-card {
+  position: absolute;
+  inset: 0;
+  margin-inline: auto;
+  width: min(48rem, 100%);
+  display: flex;
+  flex-direction: column;
+  gap: .35rem;
+  padding: .75rem;
+  border-radius: 2rem;
+  transition: transform .75s var(--ease), opacity .55s var(--ease);
+  will-change: transform, opacity;
+}
+
+.cert-card__media {
+  position: relative;
+  flex: 1;
+  min-height: 0;
+  overflow: hidden;
+  border-radius: 1.45rem;
+  background: linear-gradient(160deg, rgba(255, 255, 255, .05), rgba(0, 0, 0, .45));
+}
+
+.cert-card__media img {
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+}
+
+.cert-card__frame {
+  width: 100%;
+  height: 100%;
+  border: 0;
+  background: #fff;
+}
+
+.cert-card__badge {
+  position: absolute;
+  top: .7rem;
+  right: .7rem;
+  padding: .32rem .7rem;
+  border: 1px solid rgba(255, 255, 255, .16);
+  border-radius: 999px;
+  background: rgba(8, 8, 10, .72);
+  backdrop-filter: blur(10px);
+  font-family: var(--font-mono);
+  font-size: .62rem;
+  letter-spacing: .2em;
+  text-transform: uppercase;
+  color: rgba(228, 228, 231, .85);
+}
+
+.cert-card__body { padding: .95rem .8rem .55rem; }
+
+.cert-card__cat {
+  font-family: var(--font-mono);
+  font-size: .66rem;
+  letter-spacing: .28em;
+  text-transform: uppercase;
+  color: rgba(103, 232, 249, .8);
+}
+
+.cert-card__title {
+  margin-top: .55rem;
+  font-size: clamp(1.1rem, 2.4vw, 1.55rem);
+  font-weight: 620;
+  letter-spacing: -.02em;
+}
+
+.cert-card__meta { margin-top: .4rem; font-size: .85rem; color: rgba(161, 161, 161, .78); }
+
+.cert-card__open { margin-top: .8rem; font-size: .85rem; }
+
+.cert-controls {
+  display: flex;
+  align-items: center;
+  gap: .8rem;
+  flex-wrap: wrap;
+  margin-top: 1.5rem;
+}
+
+.cert-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 2.75rem;
+  height: 2.75rem;
+  border: 1px solid rgba(255, 255, 255, .12);
+  border-radius: 50%;
+  background: rgba(255, 255, 255, .05);
+  color: rgba(244, 244, 245, .8);
+  cursor: pointer;
+  transition: transform .45s var(--ease), border-color .4s ease, color .4s ease, background .4s ease;
+}
+
+.cert-btn:hover {
+  transform: translateY(-2px);
+  border-color: rgba(103, 232, 249, .55);
+  background: rgba(103, 232, 249, .1);
+  color: #fff;
+}
+
+.cert-dots { display: flex; align-items: center; gap: .42rem; }
+
+.cert-dot {
+  width: .5rem;
+  height: .5rem;
+  padding: 0;
+  border: 0;
+  border-radius: 999px;
+  background: rgba(255, 255, 255, .22);
+  cursor: pointer;
+  transition: width .45s var(--ease), background .45s var(--ease);
+}
+
+.cert-dot.is-active {
+  width: 1.7rem;
+  background: linear-gradient(90deg, var(--cyan), var(--violet));
+}
+
+.cert-counter {
+  margin-left: auto;
+  font-family: var(--font-mono);
+  font-size: .74rem;
+  letter-spacing: .2em;
+  color: rgba(161, 161, 161, .75);
+}
+
+.cert-counter span { color: rgba(103, 232, 249, .7); }
+
+.cert-counter__title { display: none; letter-spacing: .06em; color: rgba(228, 228, 231, .8); }
+
+@media (min-width: 720px) {
+  .cert-counter__title { display: inline; }
+}
+
+.cert-empty { max-width: 48rem; margin-inline: auto; }
+
+/* --------------------------------------------------------------- project */
+
+.project-tile { position: relative; isolation: isolate; }
+.project-tile > *:not(.saber) { position: relative; z-index: 1; }
+
+.pdetail-meta {
+  display: grid;
+  gap: 1rem;
+  grid-template-columns: repeat(auto-fit, minmax(9rem, 1fr));
+}
+
+.pdetail-meta__item {
+  padding: 1rem 1.1rem;
+  border: 1px solid rgba(255, 255, 255, .09);
+  border-radius: 1.25rem;
+  background: rgba(255, 255, 255, .04);
+}
+
+.pdetail-meta__label {
+  font-family: var(--font-mono);
+  font-size: .62rem;
+  letter-spacing: .26em;
+  text-transform: uppercase;
+  color: rgba(161, 161, 161, .72);
+}
+
+.pdetail-meta__value { margin-top: .5rem; font-size: .98rem; font-weight: 550; color: rgba(244, 244, 245, .92); }
+
+.pdetail-gallery { display: grid; gap: 1rem; grid-template-columns: repeat(auto-fit, minmax(16rem, 1fr)); }
+
+.pdetail-gallery figure {
+  overflow: hidden;
+  border: 1px solid rgba(255, 255, 255, .09);
+  border-radius: 1.4rem;
+  background: rgba(0, 0, 0, .4);
+}
+
+.pdetail-gallery img { width: 100%; height: 100%; object-fit: cover; aspect-ratio: 16 / 10; transition: transform .7s var(--ease); }
+.pdetail-gallery figure:hover img { transform: scale(1.05); }
+
+.pdetail-highlights { display: grid; gap: .75rem; }
+
+.pdetail-highlight {
+  display: flex;
+  gap: .75rem;
+  align-items: flex-start;
+  padding: .85rem 1rem;
+  border: 1px solid rgba(255, 255, 255, .08);
+  border-radius: 1.1rem;
+  background: rgba(255, 255, 255, .035);
+  font-size: .92rem;
+  color: rgba(228, 228, 231, .86);
+}
+
+.pdetail-highlight::before {
+  content: "▸";
+  color: var(--cyan);
+  line-height: 1.5;
+}
+
+/* Halaman route (/certificate, /project): nav melayang menutupi atas sheet */
+.section--page { padding-top: 8.5rem; }
+
+@media (min-width: 1024px) {
+  .section--page { padding-top: 9.5rem; }
 }

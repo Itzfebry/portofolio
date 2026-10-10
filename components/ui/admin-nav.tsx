@@ -6,6 +6,7 @@ import { usePathname } from "next/navigation";
 const ITEMS = [
   { href: "/admin", label: "Ringkasan", cmd: "summary --overview" },
   { href: "/admin/projects", label: "Proyek", cmd: "projects --list" },
+  { href: "/admin/certificates", label: "Sertifikat", cmd: "certificates --list" },
   { href: "/admin/content", label: "Konten", cmd: "content --edit" },
   { href: "/admin/settings", label: "Pengaturan", cmd: "config --profile" },
 ];

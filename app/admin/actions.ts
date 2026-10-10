@@ -99,6 +99,10 @@ export async function saveProject(
   const githubUrl = String(formData.get("github_url") ?? "").trim();
   const technologies = parseTechnologies(formData.get("technologies"));
   const role = String(formData.get("role") ?? "").trim() || "Fullstack";
+  const year = String(formData.get("year") ?? "").trim();
+  const client = String(formData.get("client") ?? "").trim();
+  const detailDescription = String(formData.get("detail_description") ?? "").trim();
+  const highlights = parseTechnologies(formData.get("highlights"));
 
   if (!title || !summary || !description) {
     return { error: "Judul, ringkasan, dan deskripsi proyek wajib diisi." };
@@ -189,6 +193,10 @@ export async function saveProject(
     technologies,
     role,
     photos,
+    year: year || null,
+    client: client || null,
+    highlights,
+    detail_description: detailDescription || null,
     updated_at: new Date().toISOString(),
   };
 
@@ -201,6 +209,8 @@ export async function saveProject(
   revalidatePath("/admin");
   revalidatePath("/admin/projects");
   revalidatePath("/");
+  revalidatePath("/project");
+  revalidatePath(`/project/${slug}`);
   return { success: "Proyek berhasil disimpan." };
 }
 
@@ -227,7 +237,146 @@ export async function deleteProject(
   revalidatePath("/admin");
   revalidatePath("/admin/projects");
   revalidatePath("/");
+  revalidatePath("/project");
   return { success: "Proyek berhasil dihapus." };
+}
+
+/** Batas unggahan sertifikat: 2 MB. */
+const MAX_CERTIFICATE_SIZE = 2 * 1024 * 1024;
+const CERTIFICATE_TYPES: Record<string, "image" | "pdf"> = {
+  "image/jpeg": "image",
+  "image/png": "image",
+  "image/webp": "image",
+  "image/gif": "image",
+  "image/avif": "image",
+  "application/pdf": "pdf",
+};
+
+export async function saveCertificate(
+  _previousState: AdminSaveState,
+  formData: FormData,
+): Promise<AdminSaveState> {
+  await requireAdminSession();
+
+  const id = String(formData.get("id") ?? "").trim();
+  const title = String(formData.get("title") ?? "").trim();
+  const issuer = String(formData.get("issuer") ?? "").trim();
+  const issuedAt = String(formData.get("issued_at") ?? "").trim();
+  const credentialId = String(formData.get("credential_id") ?? "").trim();
+  const category = String(formData.get("category") ?? "").trim() || "Lainnya";
+  const existingFileUrl = String(formData.get("existing_file_url") ?? "").trim();
+  const parsedSort = Number(formData.get("sort_order") ?? 0);
+
+  if (!title || !issuer) {
+    return { error: "Nama sertifikat dan penerbit wajib diisi." };
+  }
+
+  const admin = getAdminClient();
+  if ("error" in admin) return { error: admin.error };
+  const supabase = admin.client;
+
+  let fileUrl = existingFileUrl;
+  let fileType: "image" | "pdf" = existingFileUrl.toLowerCase().includes(".pdf") ? "pdf" : "image";
+
+  const file = formData.get("file");
+  if (file instanceof File && file.size > 0) {
+    const detected = CERTIFICATE_TYPES[file.type];
+    if (!detected) {
+      return { error: "File harus berupa gambar (JPG/PNG/WebP) atau PDF." };
+    }
+    if (file.size > MAX_CERTIFICATE_SIZE) {
+      return { error: `Ukuran file maksimal 2 MB (file Anda ${(file.size / (1024 * 1024)).toFixed(2)} MB).` };
+    }
+
+    const extension =
+      file.name.split(".").pop()?.toLowerCase().replace(/[^a-z0-9]/g, "") ||
+      (detected === "pdf" ? "pdf" : "jpg");
+    const filePath = `${crypto.randomUUID()}.${extension}`;
+
+    const { error: uploadError } = await supabase.storage
+      .from("certificates")
+      .upload(filePath, file, { contentType: file.type, upsert: false });
+
+    if (uploadError) {
+      return { error: uploadError.message || "File sertifikat tidak dapat diunggah." };
+    }
+
+    // File lama dilepas supaya bucket tidak menumpuk.
+    if (existingFileUrl) removeCertificateObject(supabase, existingFileUrl);
+
+    fileUrl = supabase.storage.from("certificates").getPublicUrl(filePath).data.publicUrl;
+    fileType = detected;
+  }
+
+  if (!fileUrl) {
+    return { error: "File sertifikat wajib diunggah (maksimal 2 MB)." };
+  }
+
+  const payload = {
+    id: id || crypto.randomUUID(),
+    title,
+    issuer,
+    issued_at: issuedAt || null,
+    credential_id: credentialId || null,
+    category,
+    file_url: fileUrl,
+    file_type: fileType,
+    sort_order: Number.isFinite(parsedSort) ? Math.trunc(parsedSort) : 0,
+    updated_at: new Date().toISOString(),
+  };
+
+  const { error } = await supabase.from("certificates").upsert(payload, { onConflict: "id" });
+
+  if (error) {
+    return { error: error.message || "Sertifikat tidak dapat disimpan." };
+  }
+
+  revalidatePath("/admin");
+  revalidatePath("/admin/certificates");
+  revalidatePath("/certificate");
+  return { success: "Sertifikat berhasil disimpan." };
+}
+
+/** Best-effort hapus object storage dari URL publiknya. */
+function removeCertificateObject(supabase: SupabaseClient, url: string) {
+  try {
+    const marker = "/certificates/";
+    const index = url.indexOf(marker);
+    if (index === -1) return;
+    const path = decodeURIComponent(url.slice(index + marker.length).split("?")[0]);
+    if (path) void supabase.storage.from("certificates").remove([path]);
+  } catch {
+    /* file lama tidak wajib terhapus */
+  }
+}
+
+export async function deleteCertificate(
+  _previousState: AdminSaveState,
+  formData: FormData,
+): Promise<AdminSaveState> {
+  await requireAdminSession();
+  const certificateId = String(formData.get("certificateId") ?? "").trim();
+  const fileUrl = String(formData.get("fileUrl") ?? "").trim();
+
+  if (!certificateId) {
+    return { error: "Sertifikat yang akan dihapus tidak ditemukan." };
+  }
+
+  const admin = getAdminClient();
+  if ("error" in admin) return { error: admin.error };
+  const supabase = admin.client;
+
+  const { error } = await supabase.from("certificates").delete().eq("id", certificateId);
+  if (error) {
+    return { error: error.message || "Sertifikat tidak dapat dihapus." };
+  }
+
+  if (fileUrl) removeCertificateObject(supabase, fileUrl);
+
+  revalidatePath("/admin");
+  revalidatePath("/admin/certificates");
+  revalidatePath("/certificate");
+  return { success: "Sertifikat berhasil dihapus." };
 }
 
 export async function saveSkill(

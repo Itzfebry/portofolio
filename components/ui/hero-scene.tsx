@@ -1,7 +1,9 @@
 "use client";
 
 import Image from "next/image";
+import { useRouter } from "next/navigation";
 import { useEffect, useRef, useState, type CSSProperties } from "react";
+import { Award, FolderOpen, MessageCircle } from "lucide-react";
 
 import GatewayFlow from "@/components/ui/gateway-flow";
 import { LiquidMetalButton } from "@/components/ui/liquid-metal-button";
@@ -91,6 +93,7 @@ const CHAT_MESSAGES = [
 ];
 
 export default function HeroScene({ profile, socialLinks, stats }: HeroSceneProps) {
+  const router = useRouter();
   const sectionRef = useRef<HTMLElement>(null);
   const [chatIndex, setChatIndex] = useState(0);
   const [chatVisible, setChatVisible] = useState(true);
@@ -256,13 +259,22 @@ export default function HeroScene({ profile, socialLinks, stats }: HeroSceneProp
             <LiquidMetalButton
               label="View my projects"
               variant="light"
+              icon={<FolderOpen size={15} strokeWidth={1.9} />}
               onClick={() => scrollToSection("projects")}
             />
             <LiquidMetalButton
               label="Contact me"
               labelColor="#ffffff"
               labelWeight={700}
+              variant="ghost"
+              icon={<MessageCircle size={15} strokeWidth={1.9} />}
               onClick={() => window.open(WHATSAPP_URL, "_blank", "noopener,noreferrer")}
+            />
+            <LiquidMetalButton
+              label="Certificates"
+              variant="ghost"
+              icon={<Award size={15} strokeWidth={1.9} />}
+              onClick={() => router.push("/certificate")}
             />
           </div>
 

@@ -72,6 +72,14 @@ export function ProjectList({ projects }: { projects: Project[] }) {
                 <span className="rounded-full border border-zinc-700 bg-zinc-950 px-2 py-1 text-xs uppercase tracking-[0.2em] text-zinc-300">
                   {project.status === "published" ? "Dipublikasikan" : "Draf"}
                 </span>
+                <a
+                  href={`/project/${project.slug}`}
+                  target="_blank"
+                  rel="noreferrer"
+                  className="rounded-xl border border-zinc-700 bg-zinc-950 px-4 py-2 text-sm text-zinc-300 transition hover:border-emerald-400/50 hover:text-white"
+                >
+                  Lihat detail
+                </a>
                 <button
                   type="button"
                   onClick={() => setEditingId(project.id)}
