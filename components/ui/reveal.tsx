@@ -50,7 +50,11 @@ export default function Reveal({ children, className = "", delay = 0, y = 26 }: 
           }
         }
       },
-      { threshold: 0.12, rootMargin: "0px 0px -6% 0px" },
+      // threshold 0: elemen sangat tinggi (mis. kartu Overview di mobile yang
+      // bisa >5000px, jauh melebihi viewport) tak akan pernah mencapai rasio
+      // 0.12 sehingga tak pernah dianggap terlihat — kontennya stuck opacity 0.
+      // Offset trigger tetap ditangani rootMargin -6% di bawah.
+      { threshold: 0, rootMargin: "0px 0px -6% 0px" },
     );
 
     observer.observe(node);
