@@ -386,6 +386,7 @@ export async function saveCertificate(
   // PDF selalu punya preview gambar halaman-1: Chrome Android & Safari iOS
   // tidak menampilkan PDF di dalam <iframe>. Konversi jalan saat file baru
   // diunggah, atau saat sertifikat lama masih tanpa preview (simpan ulang).
+  let previewNote: string | null = null;
   if (fileType === "pdf") {
     let bytes: Uint8Array | null = fileReplaced && file instanceof File && file.size > 0
       ? new Uint8Array(await file.arrayBuffer())
@@ -401,22 +402,27 @@ export async function saveCertificate(
         try {
           const res = await fetch(fileUrl);
           if (res.ok) bytes = new Uint8Array(await res.arrayBuffer());
+          else previewNote = `unduh PDF gagal: HTTP ${res.status}`;
         } catch {
-          /* fetch gagal → biarkan fallback iframe */
+          previewNote = "unduh PDF gagal: jaringan";
         }
       }
     }
 
     if (bytes) {
-      const jpeg = await renderPdfFirstPageJpeg(bytes);
-      if (jpeg) {
+      const result = await renderPdfFirstPageJpeg(bytes);
+      if (result.ok) {
         const previewPath = `${crypto.randomUUID()}-preview.jpg`;
         const { error: previewError } = await supabase.storage
           .from("certificates")
-          .upload(previewPath, jpeg, { contentType: "image/jpeg", upsert: false });
-        if (!previewError) {
+          .upload(previewPath, result.jpeg, { contentType: "image/jpeg", upsert: false });
+        if (previewError) {
+          previewNote = `unggah preview gagal: ${previewError.message}`;
+        } else {
           previewUrl = supabase.storage.from("certificates").getPublicUrl(previewPath).data.publicUrl;
         }
+      } else {
+        previewNote = `render PDF gagal: ${result.error}`;
       }
     }
   }
@@ -445,6 +451,9 @@ export async function saveCertificate(
   revalidatePath("/admin");
   revalidatePath("/admin/certificates");
   revalidatePath("/certificate");
+  if (previewNote) {
+    return { success: `Sertifikat disimpan — TETAPI preview PDF gagal dibuat (${previewNote}).` };
+  }
   return { success: "Sertifikat berhasil disimpan." };
 }
 

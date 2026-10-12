@@ -10,7 +10,11 @@
 const MAX_SCALE = 2.5;
 const TARGET_WIDTH = 1800;
 
-export async function renderPdfFirstPageJpeg(pdf: Uint8Array): Promise<Buffer | null> {
+export type PdfPreviewResult =
+  | { ok: true; jpeg: Buffer }
+  | { ok: false; error: string };
+
+export async function renderPdfFirstPageJpeg(pdf: Uint8Array): Promise<PdfPreviewResult> {
   try {
     const [pdfjs, { createCanvas }] = await Promise.all([
       import("pdfjs-dist/legacy/build/pdf.mjs"),
@@ -41,7 +45,7 @@ export async function renderPdfFirstPageJpeg(pdf: Uint8Array): Promise<Buffer | 
       // @napi-rs/canvas kompatibel pada runtime; type DOM pdfjs tidak tahu itu.
       await page.render({ canvas: canvas as never, canvasContext: context as never, viewport }).promise;
 
-      return canvas.toBuffer("image/jpeg", 0.85);
+      return { ok: true, jpeg: canvas.toBuffer("image/jpeg", 0.85) };
     } finally {
       // v6 tidak punya destroy(); cleanup() cukup melepas sumber daya halaman.
       try {
@@ -50,8 +54,10 @@ export async function renderPdfFirstPageJpeg(pdf: Uint8Array): Promise<Buffer | 
         /* tidak kritis — GC yang menangani sisa memori */
       }
     }
-  } catch {
-    // PDF rusak/terproteksi → biarkan pemanggil memakai fallback iframe.
-    return null;
+  } catch (error) {
+    return {
+      ok: false,
+      error: error instanceof Error ? `${error.name}: ${error.message}` : String(error),
+    };
   }
 }
