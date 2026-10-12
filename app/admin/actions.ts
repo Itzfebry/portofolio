@@ -6,6 +6,7 @@ import { redirect } from "next/navigation";
 import type { SupabaseClient } from "@supabase/supabase-js";
 
 import { createAdminSupabaseClient } from "@/lib/supabase/admin";
+import { renderPdfFirstPageJpeg } from "@/lib/pdf-preview";
 import { ADMIN_SESSION_COOKIE, adminSessionValue, requireAdminSession } from "@/lib/admin";
 import { createServerSupabaseClient } from "@/lib/supabase/server";
 
@@ -328,6 +329,10 @@ export async function saveCertificate(
 
   let fileUrl = existingFileUrl;
   let fileType: "image" | "pdf" = existingFileUrl.toLowerCase().includes(".pdf") ? "pdf" : "image";
+  /** True kalau file pada save ini diganti — preview lama wajib dibuang/di-reset. */
+  let fileReplaced = false;
+  /** Preview JPEG halaman-1 hasil konversi pada save ini (null = konversi tidak jalan/gagal). */
+  let previewUrl: string | null = null;
 
   const file = formData.get("file");
   if (file instanceof File && file.size > 0) {
@@ -344,16 +349,31 @@ export async function saveCertificate(
       (detected === "pdf" ? "pdf" : "jpg");
     const filePath = `${crypto.randomUUID()}.${extension}`;
 
+    // Baca sekali — dipakai untuk upload dan (kalau PDF) konversi preview.
+    const bytes = new Uint8Array(await file.arrayBuffer());
+
     const { error: uploadError } = await supabase.storage
       .from("certificates")
-      .upload(filePath, file, { contentType: file.type, upsert: false });
+      .upload(filePath, bytes, { contentType: file.type, upsert: false });
 
     if (uploadError) {
       return { error: uploadError.message || "File sertifikat tidak dapat diunggah." };
     }
 
-    // File lama dilepas supaya bucket tidak menumpuk.
+    fileReplaced = true;
+
+    // File lama (termasuk preview JPEG-nya) dilepas supaya bucket tidak menumpuk.
     if (existingFileUrl) removeCertificateObject(supabase, existingFileUrl);
+    if (id) {
+      const { data: oldRow } = await supabase
+        .from("certificates")
+        .select("preview_url")
+        .eq("id", id)
+        .maybeSingle();
+      if (typeof oldRow?.preview_url === "string" && oldRow.preview_url) {
+        removeCertificateObject(supabase, oldRow.preview_url);
+      }
+    }
 
     fileUrl = supabase.storage.from("certificates").getPublicUrl(filePath).data.publicUrl;
     fileType = detected;
@@ -361,6 +381,44 @@ export async function saveCertificate(
 
   if (!fileUrl) {
     return { error: "File sertifikat wajib diunggah (maksimal 2 MB)." };
+  }
+
+  // PDF selalu punya preview gambar halaman-1: Chrome Android & Safari iOS
+  // tidak menampilkan PDF di dalam <iframe>. Konversi jalan saat file baru
+  // diunggah, atau saat sertifikat lama masih tanpa preview (simpan ulang).
+  if (fileType === "pdf") {
+    let bytes: Uint8Array | null = fileReplaced && file instanceof File && file.size > 0
+      ? new Uint8Array(await file.arrayBuffer())
+      : null;
+
+    if (!bytes) {
+      const { data: row } = await supabase
+        .from("certificates")
+        .select("preview_url")
+        .eq("id", id)
+        .maybeSingle();
+      if (!row?.preview_url) {
+        try {
+          const res = await fetch(fileUrl);
+          if (res.ok) bytes = new Uint8Array(await res.arrayBuffer());
+        } catch {
+          /* fetch gagal → biarkan fallback iframe */
+        }
+      }
+    }
+
+    if (bytes) {
+      const jpeg = await renderPdfFirstPageJpeg(bytes);
+      if (jpeg) {
+        const previewPath = `${crypto.randomUUID()}-preview.jpg`;
+        const { error: previewError } = await supabase.storage
+          .from("certificates")
+          .upload(previewPath, jpeg, { contentType: "image/jpeg", upsert: false });
+        if (!previewError) {
+          previewUrl = supabase.storage.from("certificates").getPublicUrl(previewPath).data.publicUrl;
+        }
+      }
+    }
   }
 
   const payload = {
@@ -372,6 +430,8 @@ export async function saveCertificate(
     category,
     file_url: fileUrl,
     file_type: fileType,
+    // Tanpa file baru & tanpa hasil konversi → jangan sentuh kolom yang lama.
+    ...(fileReplaced || previewUrl ? { preview_url: previewUrl } : {}),
     sort_order: Number.isFinite(parsedSort) ? Math.trunc(parsedSort) : 0,
     updated_at: new Date().toISOString(),
   };
@@ -417,12 +477,22 @@ export async function deleteCertificate(
   if ("error" in admin) return { error: admin.error };
   const supabase = admin.client;
 
+  // Ambil preview sebelum row dihapus — setelah delete sudah tak bisa dibaca.
+  const { data: row } = await supabase
+    .from("certificates")
+    .select("preview_url")
+    .eq("id", certificateId)
+    .maybeSingle();
+
   const { error } = await supabase.from("certificates").delete().eq("id", certificateId);
   if (error) {
     return { error: error.message || "Sertifikat tidak dapat dihapus." };
   }
 
   if (fileUrl) removeCertificateObject(supabase, fileUrl);
+  if (typeof row?.preview_url === "string" && row.preview_url) {
+    removeCertificateObject(supabase, row.preview_url);
+  }
 
   revalidatePath("/admin");
   revalidatePath("/admin/certificates");

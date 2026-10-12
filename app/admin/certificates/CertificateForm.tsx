@@ -146,9 +146,13 @@ export function CertificateForm({ certificate }: { certificate?: Certificate }) 
         <div className="flex items-center justify-center overflow-hidden rounded-xl border border-zinc-700 bg-zinc-950">
           {preview ? (
             preview.toLowerCase().includes(".pdf") || (!isPdf && preview.startsWith("data:application")) ? (
-              <object data={preview} type="application/pdf" className="h-40 w-full">
-                <span className="p-4 text-xs text-zinc-400">Pratinjau PDF tidak tersedia.</span>
-              </object>
+              certificate?.preview_url ? (
+                <img src={certificate.preview_url} alt="Pratinjau sertifikat" className="h-40 w-full object-contain" />
+              ) : (
+                <object data={preview} type="application/pdf" className="h-40 w-full">
+                  <span className="p-4 text-xs text-zinc-400">Pratinjau PDF tidak tersedia.</span>
+                </object>
+              )
             ) : (
               <img src={preview} alt="Pratinjau sertifikat" className="h-40 w-full object-contain" />
             )

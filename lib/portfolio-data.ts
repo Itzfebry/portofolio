@@ -84,6 +84,8 @@ export type Certificate = {
   category: string;
   file_url: string;
   file_type: "image" | "pdf";
+  /** Preview JPEG halaman-1 PDF (null untuk gambar / hasil konversi gagal). */
+  preview_url: string | null;
   sort_order: number;
 };
 
@@ -397,6 +399,7 @@ export async function getCertificates(): Promise<Certificate[]> {
         category: String(item.category ?? "Lainnya"),
         file_url: fileUrl,
         file_type: item.file_type === "pdf" ? "pdf" : "image",
+        preview_url: typeof item.preview_url === "string" && /^https?:\/\//.test(item.preview_url) ? item.preview_url : null,
         sort_order: Number(item.sort_order ?? 0),
       });
     }

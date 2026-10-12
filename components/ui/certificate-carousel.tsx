@@ -109,12 +109,18 @@ export default function CertificateCarousel({ items }: Props) {
             >
               <div className="cert-card__media">
                 {item.file_type === "pdf" ? (
-                  <iframe
-                    className="cert-card__frame"
-                    src={`${item.file_url}#toolbar=0&view=FitH`}
-                    title={item.title}
-                    loading="lazy"
-                  />
+                  item.preview_url ? (
+                    // Preview JPEG halaman-1 — PDF tidak bisa dirender di
+                    // <iframe> pada Chrome Android & Safari iOS.
+                    <Image src={item.preview_url} alt={item.title} width={1200} height={800} sizes="(max-width: 768px) 92vw, 720px" />
+                  ) : (
+                    <iframe
+                      className="cert-card__frame"
+                      src={`${item.file_url}#toolbar=0&view=FitH`}
+                      title={item.title}
+                      loading="lazy"
+                    />
+                  )
                 ) : (
                   <Image src={item.file_url} alt={item.title} width={1200} height={800} sizes="(max-width: 768px) 92vw, 720px" />
                 )}

@@ -12,6 +12,8 @@ function supabaseHostname(): string {
 }
 
 const nextConfig: NextConfig = {
+  // Paket native/berat dijalankan apa adanya via Node — jangan dibundler.
+  serverExternalPackages: ["pdfjs-dist", "@napi-rs/canvas"],
   images: {
     remotePatterns: [
       // Foto proyek & sertifikat diambil dari bucket publik Supabase.
