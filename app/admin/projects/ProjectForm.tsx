@@ -5,6 +5,7 @@ import { useActionState, useEffect, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 
 import { saveProject } from "../actions";
+import { MarkdownTextarea } from "@/components/ui/markdown-textarea";
 import type { Project } from "@/lib/portfolio-data";
 
 type AdminSaveState = {
@@ -23,6 +24,34 @@ function padPhotos(list?: string[]): string[] {
   return slots;
 }
 
+function gcd(a: number, b: number): number {
+  return b === 0 ? a : gcd(b, a % b);
+}
+
+/** "16/9", "9/16", ... dari dimensi piksel. String kosong bila tidak valid. */
+function reduceRatio(width: number, height: number): string {
+  if (!width || !height) return "";
+  const divisor = gcd(width, height);
+  return `${width / divisor}/${height / divisor}`;
+}
+
+/** Baca rasio asli gambar di browser (tanpa upload) — dipakai untuk lightbox galeri. */
+function readImageRatio(file: File): Promise<string> {
+  return new Promise((resolve) => {
+    const url = URL.createObjectURL(file);
+    const img = new Image();
+    img.onload = () => {
+      URL.revokeObjectURL(url);
+      resolve(reduceRatio(img.naturalWidth, img.naturalHeight));
+    };
+    img.onerror = () => {
+      URL.revokeObjectURL(url);
+      resolve("");
+    };
+    img.src = url;
+  });
+}
+
 export function ProjectForm({ project }: { project?: Project }) {
   const router = useRouter();
   const [state, formAction, isPending] = useActionState<AdminSaveState, FormData>(
@@ -32,6 +61,9 @@ export function ProjectForm({ project }: { project?: Project }) {
   const [dismissed, setDismissed] = useState(false);
   const inputRefs = useRef<(HTMLInputElement | null)[]>([]);
   const [photoPreviews, setPhotoPreviews] = useState<string[]>(() => padPhotos(project?.photos));
+  const [photoRatios, setPhotoRatios] = useState<string[]>(() => padPhotos(project?.photo_ratios));
+  /** Slot yang berisi file baru (bukan foto tersimpan) — penanda untuk rasio upload baru. */
+  const [newFileFlags, setNewFileFlags] = useState<boolean[]>(() => Array(MAX_PHOTOS).fill(false));
 
   const clearInputs = () => {
     inputRefs.current.forEach((input) => {
@@ -41,6 +73,7 @@ export function ProjectForm({ project }: { project?: Project }) {
 
   /** Foto terakhir yang diketahui dari server — dipakai untuk deteksi data baru hasil refresh. */
   const knownPhotos = useRef<string[] | undefined>(project?.photos);
+  const knownRatios = useRef<string[] | undefined>(project?.photo_ratios);
 
   // Simpan sukses → minta data terbaru. Tidak bergantung pada project.photos
   // sehingga tidak memicu refresh berulang.
@@ -54,8 +87,16 @@ export function ProjectForm({ project }: { project?: Project }) {
     if (project?.photos === knownPhotos.current) return;
     knownPhotos.current = project?.photos;
     setPhotoPreviews(padPhotos(project?.photos));
+    setNewFileFlags(Array(MAX_PHOTOS).fill(false));
     clearInputs();
   }, [project?.photos]);
+
+  // Rasio asli tiap foto (dari DB) → sinkronkan saat data refresh.
+  useEffect(() => {
+    if (project?.photo_ratios === knownRatios.current) return;
+    knownRatios.current = project?.photo_ratios;
+    setPhotoRatios(padPhotos(project?.photo_ratios));
+  }, [project?.photo_ratios]);
 
   const handlePhotoChange = (index: number, file: File | null) => {
     if (!file) return;
@@ -67,6 +108,12 @@ export function ProjectForm({ project }: { project?: Project }) {
       alert("Ukuran foto maksimal 500KB.");
       return;
     }
+    setNewFileFlags((prev) => {
+      const next = [...prev];
+      next[index] = true;
+      return next;
+    });
+
     const reader = new FileReader();
     reader.onload = (e) => {
       const preview = e.target?.result as string;
@@ -77,6 +124,20 @@ export function ProjectForm({ project }: { project?: Project }) {
       });
     };
     reader.readAsDataURL(file);
+
+    // Deteksi rasio asli foto (browser baca dimensi) untuk lightbox galeri.
+    setPhotoRatios((prev) => {
+      const next = [...prev];
+      next[index] = "";
+      return next;
+    });
+    void readImageRatio(file).then((ratio) => {
+      setPhotoRatios((prev) => {
+        const next = [...prev];
+        next[index] = ratio;
+        return next;
+      });
+    });
   };
 
   const removePhoto = (index: number) => {
@@ -87,10 +148,37 @@ export function ProjectForm({ project }: { project?: Project }) {
       next[index] = "";
       return next;
     });
+    setPhotoRatios((prev) => {
+      const next = [...prev];
+      next[index] = "";
+      return next;
+    });
+    setNewFileFlags((prev) => {
+      const next = [...prev];
+      next[index] = false;
+      return next;
+    });
   };
 
   const existingPhotosJson = JSON.stringify(
     photoPreviews.filter((p) => p.startsWith("http")),
+  );
+
+  /** Rasio selaras dengan existing_photos (urutan slot yang berupa URL). */
+  const existingRatiosJson = JSON.stringify(
+    photoPreviews
+      .map((p, i) => (p.startsWith("http") ? photoRatios[i] ?? "" : null))
+      .filter((r): r is string => r !== null),
+  );
+
+  /**
+   * Rasio selaras dengan file yang benar-benar terkirim (input file terisi),
+   * supaya urutannya sama dengan loop upload `photo_0..photo_4` di server.
+   */
+  const newRatiosJson = JSON.stringify(
+    photoPreviews
+      .map((_, i) => (newFileFlags[i] ? photoRatios[i] ?? "" : null))
+      .filter((r): r is string => r !== null),
   );
 
   /**
@@ -104,6 +192,8 @@ export function ProjectForm({ project }: { project?: Project }) {
     <form action={formAction} onSubmit={() => setDismissed(false)} className="grid gap-4 md:grid-cols-2">
       <input name="id" type="hidden" value={project?.id ?? ""} />
       <input name="existing_photos" type="hidden" value={existingPhotosJson} />
+      <input name="existing_ratios" type="hidden" value={existingRatiosJson} />
+      <input name="new_ratios" type="hidden" value={newRatiosJson} />
 
       <label className="md:col-span-1">
         <span className="mb-2 block text-sm text-zinc-300">Judul proyek</span>
@@ -159,17 +249,17 @@ export function ProjectForm({ project }: { project?: Project }) {
         />
       </label>
 
-      <label className="md:col-span-2">
-        <span className="mb-2 block text-sm text-zinc-300">Deskripsi</span>
-        <textarea
+      <div className="md:col-span-2">
+        <MarkdownTextarea
           name="description"
+          label="Deskripsi"
           required
           rows={5}
           defaultValue={project?.description ?? ""}
-          className="w-full rounded-xl border border-zinc-700 bg-zinc-900 px-3 py-2.5 text-white outline-none focus:border-emerald-400"
           placeholder="Detail proyek"
+          hint="Markdown: **tebal**, *miring*, `code`, ```blok bash```, daftar `- item`, baris kosong = paragraf baru."
         />
-      </label>
+      </div>
 
       <label className="md:col-span-1">
         <span className="mb-2 block text-sm text-zinc-300">URL demo</span>
@@ -240,22 +330,26 @@ export function ProjectForm({ project }: { project?: Project }) {
             />
           </label>
 
-          <label className="md:col-span-2">
-            <span className="mb-2 block text-sm text-zinc-300">Deskripsi detail (opsional)</span>
-            <textarea
+          <div className="md:col-span-2">
+            <MarkdownTextarea
               name="detail_description"
+              label="Deskripsi detail (opsional)"
               rows={4}
               defaultValue={project?.detail_description ?? ""}
-              className="w-full rounded-xl border border-zinc-700 bg-zinc-900 px-3 py-2.5 text-white outline-none focus:border-emerald-400"
               placeholder="Cerita panjang project: masalah, proses, hasil."
+              hint="Mendukung bold, italic, code, code block bash, daftar bullet (`- item`), dan paragraf (baris kosong)."
             />
-          </label>
+          </div>
         </div>
       </div>
 
       <div className="md:col-span-2">
         <span className="mb-2 block text-sm text-zinc-300">
           Foto proyek (maks 5 foto, maks 500KB per foto)
+        </span>
+        <span className="mb-3 block text-xs text-zinc-500">
+          Rasio asli tiap foto terdeteksi otomatis (terlihat di badge foto) dan dipakai untuk
+          lightbox galeri — foto landscape dan potret bebas dicampur dalam satu project.
         </span>
         <div className="grid gap-3 sm:grid-cols-5">
           {photoPreviews.map((preview, i) => (
@@ -282,6 +376,11 @@ export function ProjectForm({ project }: { project?: Project }) {
                   >
                     <img src={preview} alt={`Foto ${i + 1}`} className="h-full w-full object-cover" />
                   </label>
+                  {photoRatios[i] ? (
+                    <span className="pointer-events-none absolute left-1.5 top-1.5 rounded-md bg-black/70 px-1.5 py-0.5 font-mono text-[10px] text-emerald-300">
+                      {photoRatios[i]}
+                    </span>
+                  ) : null}
                   <button
                     type="button"
                     onClick={() => removePhoto(i)}

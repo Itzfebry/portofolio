@@ -9,10 +9,12 @@ import ProjectCarousel from "@/components/ui/project-carousel";
 import Reveal from "@/components/ui/reveal";
 import ScrollFx from "@/components/ui/scroll-fx";
 import SectionBg from "@/components/ui/section-bg";
+import { Markdown } from "@/components/ui/markdown";
 import SiteNav from "@/components/ui/site-nav";
 import OpeningScreen from "@/components/ui/splash-screen";
 import TiltCard from "@/components/ui/tilt-card";
 import { getPortfolioData } from "@/lib/portfolio-data";
+import { stripMarkdown } from "@/lib/markdown";
 import { SITE_LANG, SITE_NAME, SITE_URL } from "@/lib/site";
 
 // Static shell + ISR: content refreshes every 5 minutes and instantly on admin save (revalidatePath).
@@ -78,7 +80,7 @@ export default async function Home() {
         alternateName: SITE_NAME,
         url: SITE_URL,
         jobTitle: data.profile.role,
-        description: data.profile.bio,
+        description: stripMarkdown(data.profile.bio),
         email: `mailto:${data.profile.email}`,
         image: data.profile.avatar_url ?? `${SITE_URL}/images/Febry.png`,
         address: {
@@ -98,7 +100,7 @@ export default async function Home() {
         url: SITE_URL,
         name: SITE_NAME,
         inLanguage: SITE_LANG,
-        description: data.profile.bio,
+        description: stripMarkdown(data.profile.bio),
         publisher: { "@id": personId },
         primaryImageOfPage: `${SITE_URL}/images/Febry.png`,
       },
@@ -120,7 +122,7 @@ export default async function Home() {
           item: {
             "@type": "CreativeWork",
             name: project.title,
-            description: project.description,
+            description: stripMarkdown(project.description),
             url: project.live_url ?? project.github_url ?? SITE_URL,
             keywords: project.technologies.join(", "),
             author: { "@id": personId },
@@ -166,7 +168,7 @@ export default async function Home() {
             <div className="grid gap-5 md:grid-cols-[1.25fr_.75fr]">
               <Reveal y={64} delay={100} className="reveal--pop h-full">
                 <div className="glass rgb-ring lift h-full rounded-3xl p-7 sm:p-9">
-                  <p className="text-lg leading-8 text-zinc-300">{data.profile.bio}</p>
+                  <Markdown text={data.profile.bio} className="text-lg leading-8 text-zinc-300" />
                   <div className="mt-8 flex flex-wrap gap-3">
                     <span className="tag">Website</span>
                     <span className="tag">Mobile</span>
@@ -288,7 +290,10 @@ export default async function Home() {
                           {project.role ?? "Fullstack"}
                         </p>
 
-                        <p className="mt-3 text-sm leading-6 text-zinc-400">{project.description}</p>
+                        <Markdown
+                          text={project.description}
+                          className="mt-3 text-justify text-sm leading-6 text-zinc-400"
+                        />
 
                         <div className="mt-4 flex flex-wrap gap-2">
                           {project.technologies.map((tech) => (

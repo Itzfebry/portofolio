@@ -85,6 +85,7 @@ alter table public.projects add column if not exists year text;
 alter table public.projects add column if not exists client text;
 alter table public.projects add column if not exists highlights text[] not null default '{}';
 alter table public.projects add column if not exists detail_description text;
+alter table public.projects add column if not exists photo_ratios text[] not null default '{}';
 
 create table if not exists public.certificates (
     id uuid primary key default gen_random_uuid(),

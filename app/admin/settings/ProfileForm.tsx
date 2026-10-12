@@ -4,6 +4,7 @@ import { useActionState, useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 
 import { saveProfile, type AdminSaveState } from "../actions";
+import { MarkdownTextarea } from "@/components/ui/markdown-textarea";
 
 type ProfileFormProps = {
   profile: {
@@ -58,10 +59,15 @@ export function ProfileForm({ profile }: ProfileFormProps) {
         <span className="mb-2 block text-sm text-zinc-300">Judul utama</span>
         <input name="headline" defaultValue={profile.headline} className="w-full rounded-xl border border-zinc-700 bg-zinc-900 px-3 py-2.5 text-white outline-none focus:border-emerald-400" />
       </label>
-      <label className="md:col-span-2">
-        <span className="mb-2 block text-sm text-zinc-300">Biodata</span>
-        <textarea name="bio" rows={4} defaultValue={profile.bio} className="w-full rounded-xl border border-zinc-700 bg-zinc-900 px-3 py-2.5 text-white outline-none focus:border-emerald-400" />
-      </label>
+      <div className="md:col-span-2">
+        <MarkdownTextarea
+          name="bio"
+          label="Biodata"
+          rows={4}
+          defaultValue={profile.bio}
+          hint="Markdown: **tebal**, *miring*, `code`, ```blok bash```, daftar `- item`, baris kosong = paragraf baru."
+        />
+      </div>
       <div className="md:col-span-2 flex justify-end">
         <button disabled={isPending} type="submit" className="rounded-xl bg-emerald-500 px-5 py-2.5 font-semibold text-slate-950 transition hover:bg-emerald-400 disabled:cursor-wait disabled:opacity-60">
           {isPending ? "Menyimpan..." : "Simpan profil"}

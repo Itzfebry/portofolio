@@ -1,9 +1,10 @@
-/* eslint-disable @next/next/no-img-element */
 import type { Metadata } from "next";
 import { notFound } from "next/navigation";
 import { ExternalLink } from "lucide-react";
 
 import { GithubIcon } from "@/components/ui/brand-icons";
+import { Markdown } from "@/components/ui/markdown";
+import ProjectGallery from "@/components/ui/project-gallery";
 import Reveal from "@/components/ui/reveal";
 import SitePage from "@/components/ui/site-page";
 import { getPortfolioData, type Project } from "@/lib/portfolio-data";
@@ -90,11 +91,31 @@ export default async function ProjectDetailPage({ params }: { params: Promise<{ 
         </div>
       </Reveal>
 
-      <div className="mt-12 grid gap-6 lg:grid-cols-[1.35fr_.65fr] relative z-10">
-        <Reveal delay={130} className="h-full relative z-10">
-          <div className="glass rgb-ring h-full rounded-3xl p-7 sm:p-9">
+      <div className="mt-12 grid gap-6 relative z-10">
+        <Reveal delay={110} className="relative z-10">
+          <div className="glass rounded-3xl p-7 sm:p-9">
+            <p className="section-index">Highlights</p>
+            <div className="pdetail-highlights mt-6">
+              {(project.highlights ?? []).length > 0 ? (
+                (project.highlights ?? []).map((item) => (
+                  <p key={item} className="pdetail-highlight">
+                    {item}
+                  </p>
+                ))
+              ) : (
+                <p className="pdetail-highlight">{project.summary}</p>
+              )}
+            </div>
+          </div>
+        </Reveal>
+
+        <Reveal delay={150} className="relative z-10">
+          <div className="glass rgb-ring rounded-3xl p-7 sm:p-9">
             <p className="section-index">Overview</p>
-            <p className="mt-6 text-lg leading-8 text-zinc-300">{description}</p>
+            <Markdown
+              text={description}
+              className="mt-6 text-justify text-lg leading-8 text-zinc-300"
+            />
 
             <div className="mt-7 flex flex-wrap gap-2">
               {project.technologies.map((tech) => (
@@ -128,35 +149,12 @@ export default async function ProjectDetailPage({ params }: { params: Promise<{ 
             </div>
           </div>
         </Reveal>
-
-        <Reveal delay={200} className="h-full relative z-10">
-          <div className="glass h-full rounded-3xl p-7 sm:p-9">
-            <p className="section-index">Highlights</p>
-            <div className="pdetail-highlights mt-6">
-              {(project.highlights ?? []).length > 0 ? (
-                (project.highlights ?? []).map((item) => (
-                  <p key={item} className="pdetail-highlight">
-                    {item}
-                  </p>
-                ))
-              ) : (
-                <p className="pdetail-highlight">{project.summary}</p>
-              )}
-            </div>
-          </div>
-        </Reveal>
       </div>
 
       {photos.length > 0 && (
         <Reveal delay={140} className="mt-12 relative z-10">
           <p className="section-index">Galeri</p>
-          <div className="pdetail-gallery mt-6">
-            {photos.map((photo) => (
-              <figure key={photo}>
-                <img src={photo} alt={`${project.title} — tampilan project`} loading="lazy" />
-              </figure>
-            ))}
-          </div>
+          <ProjectGallery photos={photos} ratios={project.photo_ratios ?? []} title={project.title} />
         </Reveal>
       )}
 

@@ -32,6 +32,11 @@ export type Project = {
   technologies: string[];
   role?: string;
   photos?: string[];
+  /**
+   * Rasio asli tiap foto, paralel dengan `photos` ("16/9", "9/16", ...).
+   * String kosong = rasio tidak diketahui (data lama).
+   */
+  photo_ratios?: string[];
   /** Detail page (/project/[slug]) */
   year?: string;
   client?: string;
@@ -288,6 +293,9 @@ async function fetchDataFromSupabase(): Promise<PortfolioData | null> {
         technologies: normalizeTechnologies(item.technologies),
         role: typeof item.role === "string" ? item.role : "Fullstack",
         photos: Array.isArray(item.photos) ? item.photos.filter((p): p is string => typeof p === "string" && p.length > 0) : [],
+        photo_ratios: Array.isArray(item.photo_ratios)
+          ? item.photo_ratios.filter((r): r is string => typeof r === "string")
+          : [],
         year: typeof item.year === "string" ? item.year : undefined,
         client: typeof item.client === "string" ? item.client : undefined,
         highlights: Array.isArray(item.highlights)

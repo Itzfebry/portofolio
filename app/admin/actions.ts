@@ -84,6 +84,19 @@ function parseTechnologies(value: FormDataEntryValue | null) {
     .filter(Boolean);
 }
 
+/** Parse JSON array berisi string (dipakai untuk daftar rasio foto). */
+function parseStringList(raw: unknown): string[] {
+  try {
+    const parsed = JSON.parse(String(raw ?? "[]"));
+    if (Array.isArray(parsed)) {
+      return parsed.filter((item): item is string => typeof item === "string");
+    }
+  } catch {
+    return [];
+  }
+  return [];
+}
+
 export async function saveProject(
   _previousState: AdminSaveState,
   formData: FormData,
@@ -180,6 +193,17 @@ export async function saveProject(
 
   const photos = [...existingPhotos, ...newPhotoUrls];
 
+  /**
+   * Rasio asli tiap foto, selaras index dengan `photos`: URL existing dulu
+   * (sesuai `existing_ratios`), lalu foto baru (sesuai `new_ratios`).
+   */
+  const existingRatiosRaw = parseStringList(formData.get("existing_ratios"));
+  const newRatiosRaw = parseStringList(formData.get("new_ratios"));
+  const photo_ratios = [
+    ...existingPhotos.map((_, i) => existingRatiosRaw[i] ?? ""),
+    ...photoFiles.map((_, i) => newRatiosRaw[i] ?? ""),
+  ];
+
   const payload = {
     id: projectId || crypto.randomUUID(),
     title,
@@ -193,6 +217,7 @@ export async function saveProject(
     technologies,
     role,
     photos,
+    photo_ratios,
     year: year || null,
     client: client || null,
     highlights,
@@ -200,7 +225,15 @@ export async function saveProject(
     updated_at: new Date().toISOString(),
   };
 
-  const { error } = await supabase.from("projects").upsert(payload, { onConflict: "id" });
+  let { error } = await supabase.from("projects").upsert(payload, { onConflict: "id" });
+
+  // Migration `photo_ratios` belum dijalankan → kolom tidak dikenal oleh DB.
+  // Simpan proyek tanpa rasio dulu supaya admin tidak gagal total.
+  if (error && (error.message ?? "").toLowerCase().includes("photo_ratios")) {
+    const legacyPayload: Record<string, unknown> = { ...payload };
+    delete legacyPayload.photo_ratios;
+    ({ error } = await supabase.from("projects").upsert(legacyPayload, { onConflict: "id" }));
+  }
 
   if (error) {
     return { error: error.message || "Proyek tidak dapat disimpan." };
