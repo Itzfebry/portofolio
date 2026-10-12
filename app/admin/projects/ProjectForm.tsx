@@ -13,9 +13,9 @@ type AdminSaveState = {
   success?: string;
 };
 
-const MAX_PHOTOS = 5;
+const MAX_PHOTOS = 10;
 
-/** Slot selalu berjumlah 5 dan tidak pernah di-reindex, supaya name photo_0..photo_4 stabil. */
+/** Slot selalu berjumlah 10 dan tidak pernah di-reindex, supaya name photo_0..photo_9 stabil. */
 function padPhotos(list?: string[]): string[] {
   const slots: string[] = Array(MAX_PHOTOS).fill("");
   (list ?? []).slice(0, MAX_PHOTOS).forEach((photo, i) => {
@@ -173,7 +173,7 @@ export function ProjectForm({ project }: { project?: Project }) {
 
   /**
    * Rasio selaras dengan file yang benar-benar terkirim (input file terisi),
-   * supaya urutannya sama dengan loop upload `photo_0..photo_4` di server.
+   * supaya urutannya sama dengan loop upload `photo_0..photo_9` di server.
    */
   const newRatiosJson = JSON.stringify(
     photoPreviews
@@ -334,7 +334,7 @@ export function ProjectForm({ project }: { project?: Project }) {
 
       <div className="md:col-span-2">
         <span className="mb-2 block text-sm text-zinc-300">
-          Foto proyek (maks 5 foto, maks 500KB per foto)
+          Foto proyek (maks 10 foto, maks 500KB per foto)
         </span>
         <span className="mb-3 block text-xs text-zinc-500">
           Rasio asli tiap foto terdeteksi otomatis (terlihat di badge foto) dan dipakai untuk

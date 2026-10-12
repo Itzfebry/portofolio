@@ -167,7 +167,7 @@ export async function saveProject(
   }
 
   const photoFiles: File[] = [];
-  const MAX_PHOTOS = 5;
+  const MAX_PHOTOS = 10;
   const MAX_SIZE = 500 * 1024; // 500KB
 
   for (let i = 0; i < MAX_PHOTOS; i++) {
