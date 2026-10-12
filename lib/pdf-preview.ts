@@ -21,6 +21,12 @@ export async function renderPdfFirstPageJpeg(pdf: Uint8Array): Promise<PdfPrevie
       import("@napi-rs/canvas"),
     ]);
 
+    // Import literal: Vercel file-tracing menyalin pdf.worker.mjs ke /var/task
+    // berdasarkan import yang terlihat di kode ini. Tanpa baris ini, fake worker
+    // pdfjs gagal di serverless ("Cannot find module .../pdf.worker.mjs").
+    // @ts-expect-error — paket tidak menyediakan tipe untuk modul worker.
+    await import("pdfjs-dist/legacy/build/pdf.worker.mjs");
+
     const task = pdfjs.getDocument({
       data: pdf,
       useSystemFonts: true,
