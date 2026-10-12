@@ -63,7 +63,8 @@ export default function GatewayFlow({
     // scroll. startTime is shifted on resume so the flow continues
     // seamlessly from where it froze.
     let pausedAt = 0;
-    let inView = true;
+    /** false sampai canvas pertama terlihat — loop menyala malalui observer di bawah. */
+    let inView = false;
     let dirty = true;
 
     const resize = () => {
@@ -98,6 +99,14 @@ export default function GatewayFlow({
       const held = root.classList.contains("is-scrolling") || root.classList.contains("is-hero-covered");
       if (held || !inView || (reducedMotion.matches && !dirty)) {
         if (!pausedAt) pausedAt = time;
+        // Loop dihentikan total saat keluar viewport (bukan cuma di-skip):
+        // IntersectionObserver di bawah menyalakan ulang saat canvas masuk
+        // kembali, dan jalur `pausedAt` di bawah menggeser startTime supaya
+        // elapsed tidak melompat selama jeda.
+        if (!inView) {
+          animationFrame = 0;
+          return;
+        }
         animationFrame = requestAnimationFrame(draw);
         return;
       }
@@ -147,13 +156,14 @@ export default function GatewayFlow({
     observer.observe(canvas);
     const visibility = new IntersectionObserver((entries) => {
       inView = entries.some((entry) => entry.isIntersecting);
+      if (inView && !animationFrame) {
+        animationFrame = requestAnimationFrame(draw);
+      }
     });
     visibility.observe(canvas);
     resize();
-    animationFrame = requestAnimationFrame((time) => {
-      startTime = time;
-      draw(time);
-    });
+    // Tidak ada rAF awal: IntersectionObserver di atas menyalakan loop saat
+    // canvas pertama masuk viewport (startTime sudah di-set saat mount).
 
     return () => {
       observer.disconnect();

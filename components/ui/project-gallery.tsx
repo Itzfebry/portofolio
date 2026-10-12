@@ -1,7 +1,7 @@
-/* eslint-disable @next/next/no-img-element */
 "use client";
 
-import { useCallback, useEffect, useState } from "react";
+import Image from "next/image";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { ChevronLeft, ChevronRight, X } from "lucide-react";
 
 type ProjectGalleryProps = {
@@ -18,6 +18,16 @@ type ProjectGalleryProps = {
 export default function ProjectGallery({ photos, ratios = [], title }: ProjectGalleryProps) {
   const total = photos.length;
   const [index, setIndex] = useState<number | null>(null);
+
+  const dialogRef = useRef<HTMLDivElement>(null);
+  const closeRef = useRef<HTMLButtonElement>(null);
+  /** Elemen pemicu (thumbnail) — fokus dikembalikan ke sini saat lightbox tutup. */
+  const triggerRef = useRef<HTMLElement | null>(null);
+
+  const openAt = (i: number) => {
+    triggerRef.current = document.activeElement instanceof HTMLElement ? document.activeElement : null;
+    setIndex(i);
+  };
 
   const close = useCallback(() => setIndex(null), []);
   const step = useCallback(
@@ -44,9 +54,48 @@ export default function ProjectGallery({ photos, ratios = [], title }: ProjectGa
     };
   }, [index, close, step]);
 
+  // Focus management lightbox: fokus masuk ke tombol Tutup saat dibuka,
+  // Tab dikunci di dalam dialog (trap), dan fokus kembali ke thumbnail
+  // saat ditutup — supaya pengguna keyboard tidak tersesat di belakang modal.
+  useEffect(() => {
+    if (index === null) {
+      triggerRef.current?.focus();
+      return;
+    }
+
+    closeRef.current?.focus();
+
+    const onKeyDown = (event: KeyboardEvent) => {
+      if (event.key !== "Tab") return;
+      const dialog = dialogRef.current;
+      if (!dialog) return;
+      const focusables = dialog.querySelectorAll<HTMLElement>("button, [href]");
+      if (focusables.length === 0) return;
+      const first = focusables[0];
+      const last = focusables[focusables.length - 1];
+      if (event.shiftKey && document.activeElement === first) {
+        event.preventDefault();
+        last.focus();
+      } else if (!event.shiftKey && document.activeElement === last) {
+        event.preventDefault();
+        first.focus();
+      }
+    };
+
+    window.addEventListener("keydown", onKeyDown);
+    return () => window.removeEventListener("keydown", onKeyDown);
+  }, [index]);
+
   if (total === 0) return null;
 
   const ratio = ratios[index ?? 0] || "";
+
+  // Dimensi intrinsic foto di lightbox: ikut rasio asli bila tersedia,
+  // supaya object-contain + aspect-ratio CSS tidak melawan atribut img.
+  const [ratioW, ratioH] = ratio.split("/").map((value) => Number(value));
+  const hasValidRatio = Number.isFinite(ratioW) && Number.isFinite(ratioH) && ratioW > 0 && ratioH > 0;
+  const lightboxWidth = hasValidRatio ? Math.round(ratioW * 100) : 1600;
+  const lightboxHeight = hasValidRatio ? Math.round(ratioH * 100) : 1000;
 
   return (
     <>
@@ -56,10 +105,16 @@ export default function ProjectGallery({ photos, ratios = [], title }: ProjectGa
             <button
               type="button"
               className="pdetail-gallery__zoom"
-              onClick={() => setIndex(i)}
+              onClick={() => openAt(i)}
               aria-label={`Perbesar foto ${i + 1} dari ${title}`}
             >
-              <img src={photo} alt={`${title} — foto ${i + 1}`} loading="lazy" />
+              <Image
+                src={photo}
+                alt={`${title} — foto ${i + 1}`}
+                width={640}
+                height={400}
+                sizes="(max-width: 768px) 50vw, 33vw"
+              />
             </button>
           </figure>
         ))}
@@ -67,6 +122,7 @@ export default function ProjectGallery({ photos, ratios = [], title }: ProjectGa
 
       {index !== null && (
         <div
+          ref={dialogRef}
           role="dialog"
           aria-modal="true"
           aria-label={`Foto ${index + 1} dari ${total} — ${title}`}
@@ -74,6 +130,7 @@ export default function ProjectGallery({ photos, ratios = [], title }: ProjectGa
           onClick={close}
         >
           <button
+            ref={closeRef}
             type="button"
             onClick={close}
             aria-label="Tutup lightbox"
@@ -110,11 +167,15 @@ export default function ProjectGallery({ photos, ratios = [], title }: ProjectGa
             className="flex max-h-full max-w-full flex-col items-center"
             onClick={(event) => event.stopPropagation()}
           >
-            <img
+            <Image
               src={photos[index]}
               alt={`${title} — foto ${index + 1}`}
+              width={lightboxWidth}
+              height={lightboxHeight}
               className="max-h-[82vh] max-w-[92vw] rounded-xl object-contain"
               style={ratio ? { aspectRatio: ratio } : undefined}
+              sizes="92vw"
+              priority
             />
             <p className="mt-3 text-center font-mono text-xs tracking-[.15em] text-zinc-400">
               {index + 1} / {total}

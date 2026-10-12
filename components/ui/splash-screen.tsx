@@ -8,8 +8,10 @@ import { markEntered, resetEntered } from "@/lib/entrance";
 const DURATION = 2400;
 const HOLD = 380;
 const EXIT = 760;
-/** Jaring pengaman: kalau logika keluar gagal, hero tetap dilepas. */
-const BACKSTOP = 8000;
+/** Jaring pengaman: kalau logika keluar gagal, hero tetap dilepas.
+ *  Harus sinkron dengan `splash-safety 7s` di globals.css — jika beda,
+ *  ada jeda di mana splash sudah tak terlihat tetapi scroll masih terkunci. */
+const BACKSTOP = 7000;
 
 /** Posisi deterministik supaya SSR dan client menghasilkan markup yang sama. */
 const PARTICLES = [
@@ -35,6 +37,8 @@ function SplashScreen({ onDone }: { onDone: () => void }) {
   const leavingRef = useRef(false);
   const rafRef = useRef<number | null>(null);
   const timerRef = useRef<number | null>(null);
+  const dialogRef = useRef<HTMLDivElement>(null);
+  const skipRef = useRef<HTMLButtonElement>(null);
 
   const clearPending = useCallback(() => {
     if (rafRef.current !== null) cancelAnimationFrame(rafRef.current);
@@ -110,9 +114,18 @@ function SplashScreen({ onDone }: { onDone: () => void }) {
     return clearPending;
   }, [startLeaving, clearPending, onDone]);
 
-  // Lewati lewat keyboard.
+  // Lewati lewat keyboard + jaga fokus tetap di dalam splash (focus trap).
+  // Splash adalah modal semu: tak ada elemen lain yang boleh terjangkau Tab
+  // selama tampil, dan tombol "Lewati" adalah satu-satunya kontrol fokusable.
   useEffect(() => {
+    dialogRef.current?.focus();
+
     const onKeyDown = (event: KeyboardEvent) => {
+      if (event.key === "Tab") {
+        event.preventDefault();
+        skipRef.current?.focus();
+        return;
+      }
       if (event.key !== "Escape" && event.key !== "Enter" && event.key !== " ") return;
       event.preventDefault();
       skip();
@@ -122,7 +135,15 @@ function SplashScreen({ onDone }: { onDone: () => void }) {
   }, [skip]);
 
   return (
-    <div className={`splash${leaving ? " is-leaving" : ""}`} onClick={skip}>
+    <div
+      ref={dialogRef}
+      role="dialog"
+      aria-modal="true"
+      aria-label="Memuat portofolio"
+      tabIndex={-1}
+      className={`splash${leaving ? " is-leaving" : ""}`}
+      onClick={skip}
+    >
       <p className="sr-only" role="status">
         Memuat portofolio
       </p>
@@ -183,6 +204,7 @@ function SplashScreen({ onDone }: { onDone: () => void }) {
       </div>
 
       <button
+        ref={skipRef}
         type="button"
         className="splash__skip"
         onClick={(e) => {

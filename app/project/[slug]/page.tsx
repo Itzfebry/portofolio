@@ -36,9 +36,13 @@ export async function generateMetadata({
   return {
     title: project.title,
     description: project.summary,
+    alternates: {
+      canonical: `/project/${slug}`,
+    },
     openGraph: {
       title: project.title,
       description: project.summary,
+      url: `/project/${slug}`,
       images: project.cover_image ? [project.cover_image] : undefined,
     },
   };
@@ -93,9 +97,9 @@ export default async function ProjectDetailPage({ params }: { params: Promise<{ 
 
       <div className="mt-12 grid gap-6 relative z-10">
         <Reveal delay={110} className="relative z-10">
-          <div className="glass rounded-3xl p-7 sm:p-9">
+          <div className="glass rounded-3xl p-5 sm:p-7">
             <p className="section-index">Highlights</p>
-            <div className="pdetail-highlights mt-6">
+            <div className="pdetail-highlights mt-5">
               {(project.highlights ?? []).length > 0 ? (
                 (project.highlights ?? []).map((item) => (
                   <p key={item} className="pdetail-highlight">
@@ -110,14 +114,14 @@ export default async function ProjectDetailPage({ params }: { params: Promise<{ 
         </Reveal>
 
         <Reveal delay={150} className="relative z-10">
-          <div className="glass rgb-ring rounded-3xl p-7 sm:p-9">
+          <div className="glass rgb-ring rounded-3xl p-5 sm:p-7">
             <p className="section-index">Overview</p>
             <Markdown
               text={description}
-              className="mt-6 text-justify text-lg leading-8 text-zinc-300"
+              className="mt-5 text-justify text-lg leading-8 text-zinc-300"
             />
 
-            <div className="mt-7 flex flex-wrap gap-2">
+            <div className="mt-6 flex flex-wrap gap-2">
               {project.technologies.map((tech) => (
                 <span key={tech} className="chip">
                   {tech}

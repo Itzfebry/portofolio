@@ -3,11 +3,9 @@
 import Image from "next/image";
 import { useEffect, useRef, useState } from "react";
 
-import { LiquidMetalButton } from "@/components/ui/liquid-metal-button";
-
 const LINKS = [
   { id: "about", label: "About", href: "#about" },
-  { id: "skills", label: "Skills", href: "#skills" },
+  { id: "skills", label: "Tools", href: "#skills" },
   { id: "projects", label: "Projects", href: "#projects" },
   { id: "experience", label: "Experience", href: "#experience" },
   { id: "contact", label: "Contact", href: "#contact" },
@@ -17,7 +15,7 @@ const LINKS = [
 const ACTIVE_OFFSET = 160;
 const SCROLLED_AT = 24;
 
-export default function SiteNav({ email }: { email: string }) {
+export default function SiteNav() {
   const [active, setActive] = useState("");
   const [open, setOpen] = useState(false);
   const [scrolled, setScrolled] = useState(false);
@@ -137,14 +135,7 @@ export default function SiteNav({ email }: { email: string }) {
           ))}
         </nav>
 
-        {/* <div className="site-nav__actions">
-          <LiquidMetalButton
-            label="Let's talk"
-            variant="light"
-            onClick={() => {
-              window.location.href = `mailto:${email}`;
-            }}
-          />
+        <div className="site-nav__actions">
           <button
             type="button"
             className="site-nav__toggle"
@@ -155,7 +146,7 @@ export default function SiteNav({ email }: { email: string }) {
             <span />
             <span />
           </button>
-        </div> */}
+        </div>
       </div>
 
       {/* Driven imperatively from the scroll loop above: a CSS transition here

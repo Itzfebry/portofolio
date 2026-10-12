@@ -2,7 +2,7 @@
 
 import Image from "next/image";
 import { useRouter } from "next/navigation";
-import { useEffect, useRef, useState, type CSSProperties } from "react";
+import { useEffect, useRef, useState, type CSSProperties, type ReactNode } from "react";
 import { Award, FolderOpen, MessageCircle } from "lucide-react";
 
 import GatewayFlow from "@/components/ui/gateway-flow";
@@ -91,6 +91,32 @@ const CHAT_MESSAGES = [
   "I'm currently open to work",
   "Let's connect — click to reach out!",
 ];
+
+/**
+ * Tombol ghost hero: padanan visual LiquidMetalButton (pill transparan,
+ * border tipis, hover cyan) tanpa DOM berat efek 3D/shader — dua tombol
+ * sampingan cukup ini, hanya CTA utama yang pakai LiquidMetalButton.
+ */
+function HeroGhostButton({
+  label,
+  icon,
+  bold = false,
+  onClick,
+}: {
+  label: string;
+  icon: ReactNode;
+  bold?: boolean;
+  onClick: () => void;
+}) {
+  return (
+    <button type="button" className="hero-ghost-btn" onClick={onClick}>
+      <span className="hero-ghost-btn__icon" aria-hidden="true">
+        {icon}
+      </span>
+      <span style={bold ? { fontWeight: 700 } : undefined}>{label}</span>
+    </button>
+  );
+}
 
 export default function HeroScene({ profile, socialLinks, stats }: HeroSceneProps) {
   const router = useRouter();
@@ -262,17 +288,14 @@ export default function HeroScene({ profile, socialLinks, stats }: HeroSceneProp
               icon={<FolderOpen size={15} strokeWidth={1.9} />}
               onClick={() => scrollToSection("projects")}
             />
-            <LiquidMetalButton
+            <HeroGhostButton
               label="Contact me"
-              labelColor="#ffffff"
-              labelWeight={700}
-              variant="ghost"
+              bold
               icon={<MessageCircle size={15} strokeWidth={1.9} />}
               onClick={() => window.open(WHATSAPP_URL, "_blank", "noopener,noreferrer")}
             />
-            <LiquidMetalButton
+            <HeroGhostButton
               label="Certificates"
-              variant="ghost"
               icon={<Award size={15} strokeWidth={1.9} />}
               onClick={() => router.push("/certificate")}
             />

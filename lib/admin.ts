@@ -2,18 +2,41 @@ import { createHash } from "node:crypto";
 import { cookies } from "next/headers";
 import { redirect } from "next/navigation";
 
-const ADMIN_ACCESS_WORD = "itzfebryhcx23";
-const ADMIN_ACCESS_PIN = "230826";
+/**
+ * Kata sandi admin TIDAK ditulis di repo. Isi `ADMIN_ACCESS_WORD` di
+ * `.env.local` (lokal) dan environment variables Vercel (produksi).
+ * Tanpa env, seluruh area admin otomatis terkunci.
+ */
+const ADMIN_ACCESS_WORD = process.env.ADMIN_ACCESS_WORD;
+
 const ADMIN_SESSION_COOKIE = "portfolio_admin_session";
-const ADMIN_SESSION_VALUE = createHash("sha256")
-  .update(`${ADMIN_ACCESS_WORD}:${ADMIN_ACCESS_PIN}`)
-  .digest("hex");
+
+export { ADMIN_SESSION_COOKIE };
+
+/**
+ * Nilai cookie diturunkan dari kata sandi lewat hash ber-salt, sehingga
+ * bisa diverifikasi stateless tanpa menyimpan sesi di database.
+ * Ganti kata sandi = seluruh sesi lama otomatis mati.
+ */
+export function adminSessionValue(): string | null {
+  if (!ADMIN_ACCESS_WORD) return null;
+  return createHash("sha256")
+    .update(`portfolio-admin:${ADMIN_ACCESS_WORD}`)
+    .digest("hex");
+}
 
 export async function requireAdminSession() {
+  const expected = adminSessionValue();
+  // Env belum diisi = admin terkunci penuh. Redirect (bukan throw) supaya
+  // build Next tetap mengenali route ini sebagai dynamic, bukan error.
+  if (!expected) {
+    redirect("/admin/login");
+  }
+
   const cookieStore = await cookies();
   const session = cookieStore.get(ADMIN_SESSION_COOKIE)?.value;
 
-  if (session !== ADMIN_SESSION_VALUE) {
+  if (session !== expected) {
     redirect("/admin/login");
   }
 
@@ -22,6 +45,9 @@ export async function requireAdminSession() {
 
 /** Non-redirecting session check — used by the layout to hide the sidebar. */
 export async function hasAdminSession() {
+  const expected = adminSessionValue();
+  if (!expected) return false;
+
   const cookieStore = await cookies();
-  return cookieStore.get(ADMIN_SESSION_COOKIE)?.value === ADMIN_SESSION_VALUE;
+  return cookieStore.get(ADMIN_SESSION_COOKIE)?.value === expected;
 }

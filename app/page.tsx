@@ -1,5 +1,6 @@
 /* eslint-disable @next/next/no-img-element */
 import { Mail, Share2 } from "lucide-react";
+import Image from "next/image";
 import Link from "next/link";
 
 import { GithubIcon, InstagramIcon, LinkedinIcon } from "@/components/ui/brand-icons";
@@ -34,8 +35,20 @@ function yearsOfExperience(periods: string[]) {
   return Math.max(1, new Date().getFullYear() - Math.min(...years));
 }
 
+/** Potong deskripsi card home (maks 500 karakter) supaya tinggi kartu seragam. */
+function clampCardText(text: string, max = 500) {
+  if (text.length <= max) return text;
+  const cut = text.slice(0, max);
+  const lastSpace = cut.lastIndexOf(" ");
+  return `${(lastSpace > max * 0.75 ? cut.slice(0, lastSpace) : cut).trimEnd()}…`;
+}
+
+/** Deskripsi JSON-LD dipendekkan — mesin pencari cukup 200 karakter pertama. */
+const clampJsonLdText = (text: string) => stripMarkdown(text).slice(0, 200);
+
 export default async function Home() {
   const data = await getPortfolioData();
+  const publishedProjects = data.projects.filter((project) => project.status === "published");
 
   const stats = [
     { value: `${yearsOfExperience(data.experiences.map((item) => item.period))}+`, label: "Tahun Pengalaman" },
@@ -63,7 +76,9 @@ export default async function Home() {
     },
     {
       label: "LinkedIn",
-      url: findSocial("LinkedIn")?.url ?? "https://linkedin.com",
+      url:
+        findSocial("LinkedIn")?.url ??
+        "https://www.linkedin.com/in/mochammad-ginata-febryansyah-29708337a/",
       Icon: LinkedinIcon,
     },
   ];
@@ -80,7 +95,7 @@ export default async function Home() {
         alternateName: SITE_NAME,
         url: SITE_URL,
         jobTitle: data.profile.role,
-        description: stripMarkdown(data.profile.bio),
+        description: clampJsonLdText(data.profile.bio),
         email: `mailto:${data.profile.email}`,
         image: data.profile.avatar_url ?? `${SITE_URL}/images/Febry.png`,
         address: {
@@ -100,7 +115,7 @@ export default async function Home() {
         url: SITE_URL,
         name: SITE_NAME,
         inLanguage: SITE_LANG,
-        description: stripMarkdown(data.profile.bio),
+        description: clampJsonLdText(data.profile.bio),
         publisher: { "@id": personId },
         primaryImageOfPage: `${SITE_URL}/images/Febry.png`,
       },
@@ -115,14 +130,14 @@ export default async function Home() {
       {
         "@type": "ItemList",
         name: "Project",
-        numberOfItems: data.projects.length,
-        itemListElement: data.projects.map((project, index) => ({
+        numberOfItems: publishedProjects.length,
+        itemListElement: publishedProjects.map((project, index) => ({
           "@type": "ListItem",
           position: index + 1,
           item: {
             "@type": "CreativeWork",
             name: project.title,
-            description: stripMarkdown(project.description),
+            description: clampJsonLdText(project.description),
             url: project.live_url ?? project.github_url ?? SITE_URL,
             keywords: project.technologies.join(", "),
             author: { "@id": personId },
@@ -141,7 +156,7 @@ export default async function Home() {
         }}
       />
       <OpeningScreen />
-      <SiteNav email={data.profile.email} />
+      <SiteNav />
       <ScrollFx />
 
       <LiquidGlassShell>
@@ -156,7 +171,7 @@ export default async function Home() {
                 <div>
                   <p className="section-index">01 — About</p>
                   <h2 className="section-title">
-                    Who am i?
+                    Who am I?
                     <br />
                      Something about <span className="gradient-text">me</span>.
                   </h2>
@@ -217,7 +232,7 @@ export default async function Home() {
             <Reveal className="relative z-10">
               <div className="section-head">
                 <div>
-                  <p className="section-index">02 — Skills</p>
+                  <p className="section-index">02 — Tools</p>
                   <h2 className="section-title">
                     My Tools <span className="gradient-text">craft</span>.
                   </h2>
@@ -259,15 +274,15 @@ export default async function Home() {
                 <div>
                   <p className="section-index">03 — Projects</p>
                   <h2 className="section-title">
-                    What i have <span className="gradient-text">done</span>.
+                    What I have <span className="gradient-text">done</span>.
                   </h2>
                 </div>
-                <p className="section-note">{data.projects.length} case studies</p>
+                <p className="section-note">{publishedProjects.length} case studies</p>
               </div>
             </Reveal>
 
             <div className="grid gap-5 md:grid-cols-2 relative z-10">
-              {data.projects.map((project, index) => (
+              {publishedProjects.map((project, index) => (
                 <Reveal key={project.id} delay={index * 110} className="h-full relative z-10">
                   <TiltCard className="glass h-full" max={7}>
                     <article className="project-card">
@@ -275,7 +290,13 @@ export default async function Home() {
                         {project.photos && project.photos.length > 0 ? (
                           <ProjectCarousel photos={project.photos} title={project.title} />
                         ) : project.cover_image ? (
-                          <img src={project.cover_image} alt={project.title} loading="lazy" />
+                          <Image
+                            src={project.cover_image}
+                            alt={project.title}
+                            width={1280}
+                            height={800}
+                            sizes="(max-width: 768px) 100vw, 640px"
+                          />
                         ) : null}
                         <span className="project-card__badge">{project.status}</span>
                       </div>
@@ -291,7 +312,7 @@ export default async function Home() {
                         </p>
 
                         <Markdown
-                          text={project.description}
+                          text={clampCardText(project.description)}
                           className="mt-3 text-justify text-sm leading-6 text-zinc-400"
                         />
 
@@ -359,16 +380,20 @@ export default async function Home() {
                 <Reveal key={item.id} delay={index * 110} className="timeline__item relative z-10">
                   <TiltCard className="glass" max={5}>
                     <div className="flex flex-col gap-4 p-6 sm:flex-row sm:items-start sm:justify-between sm:p-7">
-                      <div>
+                      <div className="min-w-0 flex-1">
                         <div className="flex flex-wrap items-center gap-3">
                           <h3 className="text-lg font-semibold tracking-tight">{item.role}</h3>
                           <span className="period-pill">{item.period}</span>
                         </div>
                         <p className="mt-2 text-sm text-zinc-500">
-                          {item.company}
-                          {item.location ? ` · ${item.location}` : ""}
+                          <span className="font-semibold text-white">{item.company}</span>
+                          {item.location ? (
+                            <span className="text-cyan-300/80"> · {item.location}</span>
+                          ) : null}
                         </p>
-                        <p className="mt-4 max-w-2xl text-sm leading-6 text-zinc-400">{item.description}</p>
+                        <p className="mt-4 w-full text-justify text-sm leading-6 text-zinc-400">
+                          {item.description}
+                        </p>
                       </div>
                       <span className="shrink-0 font-mono text-xs uppercase tracking-[.2em] text-zinc-600">
                         {String(index + 1).padStart(2, "0")}
@@ -408,7 +433,7 @@ export default async function Home() {
                         <span className="contact-status__emoji" aria-hidden="true">
                           🟢
                         </span>
-                        Avaible for work
+                        Available for work
                       </p>
                     </Reveal>
                   </div>

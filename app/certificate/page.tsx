@@ -10,7 +10,13 @@ export const revalidate = 300;
 export const metadata: Metadata = {
   title: "Certificates",
   description:
-    "Koleksi sertifikat pelatihan dan keahlian Mochammad Ginata Febryansyah â€” Frontend Developer.",
+    "Koleksi sertifikat pelatihan dan keahlian Mochammad Ginata Febryansyah — Frontend Developer.",
+  alternates: {
+    canonical: "/certificate",
+  },
+  openGraph: {
+    url: "/certificate",
+  },
 };
 
 export default async function CertificatePage() {

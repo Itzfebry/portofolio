@@ -238,17 +238,6 @@ export function ProjectForm({ project }: { project?: Project }) {
         </select>
       </label>
 
-      <label className="md:col-span-2">
-        <span className="mb-2 block text-sm text-zinc-300">Ringkasan</span>
-        <input
-          name="summary"
-          required
-          defaultValue={project?.summary ?? ""}
-          className="w-full rounded-xl border border-zinc-700 bg-zinc-900 px-3 py-2.5 text-white outline-none focus:border-emerald-400"
-          placeholder="Ringkasan singkat"
-        />
-      </label>
-
       <div className="md:col-span-2">
         <MarkdownTextarea
           name="description"

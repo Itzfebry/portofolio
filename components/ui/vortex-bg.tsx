@@ -111,6 +111,11 @@ export default function VortexBg({
 
     let width = 0;
     let height = 0;
+    /**
+     * Loop dimulai HANYA saat canvas pertama terlihat (lazy) — bukan saat
+     * mount. false = keluar viewport: rAF distop, bukan cuma di-skip.
+     */
+    let inView = false;
 
     const resize = () => {
       const rect = canvas.getBoundingClientRect();
@@ -128,6 +133,7 @@ export default function VortexBg({
     const noise = noiseRef.current;
 
     const draw = (time: number) => {
+      frameRef.current = 0;
       ctx.clearRect(0, 0, width, height);
 
       const t = time * 0.001 * speed;
@@ -174,14 +180,24 @@ export default function VortexBg({
         ctx.stroke();
       }
 
-      if (!reduced) {
+      if (!reduced && inView) {
         frameRef.current = requestAnimationFrame(draw);
       }
     };
 
-    frameRef.current = requestAnimationFrame(draw);
+    const visibility = new IntersectionObserver((entries) => {
+      const next = entries.some((entry) => entry.isIntersecting);
+      if (next === inView) return;
+      inView = next;
+      // Penyala pertama: termasuk mode reduced-motion (satu frame statis).
+      if (inView && !frameRef.current) {
+        frameRef.current = requestAnimationFrame(draw);
+      }
+    });
+    visibility.observe(canvas);
 
     return () => {
+      visibility.disconnect();
       cancelAnimationFrame(frameRef.current);
       window.removeEventListener("resize", resize);
     };

@@ -14,8 +14,6 @@ export function LoginForm() {
 
   return (
     <form action={formAction}>
-      <input type="hidden" name="credentialType" value="word" />
-
       <div className="hack-field">
         <span className="hack-field__prompt" aria-hidden="true">
           $

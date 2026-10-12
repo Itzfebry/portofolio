@@ -28,6 +28,11 @@ export default function SectionBg({
 
     let width = 0;
     let height = 0;
+    /**
+     * Loop dimulai HANYA saat canvas pertama terlihat (lazy) — bukan saat
+     * mount. false = keluar viewport: rAF distop, bukan cuma di-skip.
+     */
+    let inView = false;
 
     const resize = () => {
       const rect = canvas.getBoundingClientRect();
@@ -146,6 +151,7 @@ export default function SectionBg({
     };
 
     const draw = (time: number) => {
+      frameRef.current = 0;
       const t = time * 0.001;
 
       switch (variant) {
@@ -166,14 +172,26 @@ export default function SectionBg({
           break;
       }
 
-      if (!reduced) {
+      // Loop berhenti sendiri saat canvas keluar viewport (flag di bawah);
+      // IntersectionObserver menyalakan ulang saat masuk kembali.
+      if (!reduced && inView) {
         frameRef.current = requestAnimationFrame(draw);
       }
     };
 
-    frameRef.current = requestAnimationFrame(draw);
+    const visibility = new IntersectionObserver((entries) => {
+      const next = entries.some((entry) => entry.isIntersecting);
+      if (next === inView) return;
+      inView = next;
+      // Penyala pertama: termasuk mode reduced-motion (satu frame statis).
+      if (inView && !frameRef.current) {
+        frameRef.current = requestAnimationFrame(draw);
+      }
+    });
+    visibility.observe(canvas);
 
     return () => {
+      visibility.disconnect();
       cancelAnimationFrame(frameRef.current);
       window.removeEventListener("resize", resize);
     };

@@ -1,13 +1,12 @@
 "use server";
 
-import { createHash } from "node:crypto";
 import { cookies } from "next/headers";
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import type { SupabaseClient } from "@supabase/supabase-js";
 
 import { createAdminSupabaseClient } from "@/lib/supabase/admin";
-import { requireAdminSession } from "@/lib/admin";
+import { ADMIN_SESSION_COOKIE, adminSessionValue, requireAdminSession } from "@/lib/admin";
 import { createServerSupabaseClient } from "@/lib/supabase/server";
 
 export type AdminLoginState = {
@@ -18,13 +17,6 @@ export type AdminSaveState = {
   error?: string;
   success?: string;
 };
-
-const ADMIN_ACCESS_WORD = "itzfebryhcx23";
-const ADMIN_ACCESS_PIN = "230826";
-const ADMIN_SESSION_COOKIE = "portfolio_admin_session";
-const ADMIN_SESSION_VALUE = createHash("sha256")
-  .update(`${ADMIN_ACCESS_WORD}:${ADMIN_ACCESS_PIN}`)
-  .digest("hex");
 
 function getAdminClient(): { client: SupabaseClient } | { error: string } {
   try {
@@ -43,19 +35,20 @@ export async function signInAdmin(
   _previousState: AdminLoginState,
   formData: FormData,
 ): Promise<AdminLoginState> {
-  const credentialType = String(formData.get("credentialType") ?? "word");
   const secret = String(formData.get("secret") ?? "").trim();
+  const accessWord = process.env.ADMIN_ACCESS_WORD;
+  const sessionValue = adminSessionValue();
 
-  const isValid =
-    (credentialType === "word" && secret === ADMIN_ACCESS_WORD) ||
-    (credentialType === "pin" && secret === ADMIN_ACCESS_PIN);
+  if (!accessWord || !sessionValue) {
+    return { error: "Konfigurasi admin belum lengkap di server." };
+  }
 
-  if (!secret || !isValid) {
-    return { error: "Word atau PIN yang dimasukkan salah." };
+  if (!secret || secret !== accessWord) {
+    return { error: "Kata sandi yang dimasukkan salah." };
   }
 
   const cookieStore = await cookies();
-  cookieStore.set(ADMIN_SESSION_COOKIE, ADMIN_SESSION_VALUE, {
+  cookieStore.set(ADMIN_SESSION_COOKIE, sessionValue, {
     httpOnly: true,
     sameSite: "lax",
     secure: process.env.NODE_ENV === "production",
@@ -97,6 +90,17 @@ function parseStringList(raw: unknown): string[] {
   return [];
 }
 
+/** Ringkasan dibuat otomatis dari deskripsi (markdown dibuang) — form admin tidak lagi meminta summary. */
+function deriveSummary(description: string): string {
+  const plain = description
+    .replace(/```[\s\S]*?```/g, " ")
+    .replace(/[#*`_>\[\]()!-]/g, " ")
+    .replace(/\s+/g, " ")
+    .trim();
+  const text = plain || description.replace(/\s+/g, " ").trim();
+  return text.slice(0, 160).trim();
+}
+
 export async function saveProject(
   _previousState: AdminSaveState,
   formData: FormData,
@@ -104,7 +108,6 @@ export async function saveProject(
   await requireAdminSession();
   const projectId = String(formData.get("id") ?? "");
   const title = String(formData.get("title") ?? "").trim();
-  const summary = String(formData.get("summary") ?? "").trim();
   const description = String(formData.get("description") ?? "").trim();
   const status = String(formData.get("status") ?? "published");
   const featured = formData.get("featured") === "on";
@@ -117,8 +120,8 @@ export async function saveProject(
   const detailDescription = String(formData.get("detail_description") ?? "").trim();
   const highlights = parseTechnologies(formData.get("highlights"));
 
-  if (!title || !summary || !description) {
-    return { error: "Judul, ringkasan, dan deskripsi proyek wajib diisi." };
+  if (!title || !description) {
+    return { error: "Judul dan deskripsi proyek wajib diisi." };
   }
 
   const admin = getAdminClient();
@@ -135,6 +138,21 @@ export async function saveProject(
   if (!slug) {
     return { error: "Slug proyek wajib diisi." };
   }
+
+  /**
+   * Ringkasan tidak lagi diisi manual. Proyek lama pertahankan summary tersimpan;
+   * proyek baru derive otomatis dari deskripsi (fallback description di parser data).
+   */
+  let summary = "";
+  if (projectId) {
+    const { data: existing } = await supabase
+      .from("projects")
+      .select("summary")
+      .eq("id", projectId)
+      .maybeSingle();
+    summary = String(existing?.summary ?? "").trim();
+  }
+  if (!summary) summary = deriveSummary(description);
 
   // Handle photo uploads — max 5 photos, max 500KB each
   const existingPhotosRaw = String(formData.get("existing_photos") ?? "[]");
@@ -675,8 +693,13 @@ async function deleteAdminRecord(
   if (!id) return { error: `${label} tidak ditemukan.` };
   const admin = getAdminClient();
   if ("error" in admin) return { error: admin.error };
-  const { error } = await admin.client.from(table).delete().eq("id", id);
+  // .select() mengembalikan baris yang benar-benar terhapus — 0 baris berarti
+  // id tidak ada di database (mis. data contoh fallback, bukan row asli).
+  const { data, error } = await admin.client.from(table).delete().eq("id", id).select("id");
   if (error) return { error: error.message || `${label} tidak dapat dihapus.` };
+  if (!data?.length) {
+    return { error: `${label} tidak ditemukan di database — kemungkinan data contoh, bukan baris asli.` };
+  }
   revalidatePath("/admin/settings", "page");
   revalidatePath("/admin/content", "page");
   revalidatePath("/", "page");

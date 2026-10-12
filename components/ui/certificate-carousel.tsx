@@ -1,6 +1,6 @@
-/* eslint-disable @next/next/no-img-element */
 "use client";
 
+import Image from "next/image";
 import { useRef, useState, type CSSProperties, type PointerEvent } from "react";
 import { ChevronLeft, ChevronRight, ExternalLink } from "lucide-react";
 
@@ -37,9 +37,7 @@ export default function CertificateCarousel({ items }: Props) {
     return (
       <div className="cert-empty glass rounded-3xl p-9 text-center">
         <p className="section-index justify-center">Certificates</p>
-        <p className="mt-5 text-zinc-400">
-          Belum ada sertifikat. Tambahkan lewat <span className="text-cyan-300">/admin/certificates</span>.
-        </p>
+        <p className="mt-5 text-zinc-400">Belum ada sertifikat yang dipublikasikan.</p>
       </div>
     );
   }
@@ -118,7 +116,7 @@ export default function CertificateCarousel({ items }: Props) {
                     loading="lazy"
                   />
                 ) : (
-                  <img src={item.file_url} alt={item.title} loading="lazy" />
+                  <Image src={item.file_url} alt={item.title} width={1200} height={800} sizes="(max-width: 768px) 92vw, 720px" />
                 )}
                 <span className="cert-card__badge">{item.file_type === "pdf" ? "PDF" : "Sertifikat"}</span>
               </div>

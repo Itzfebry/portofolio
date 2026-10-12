@@ -63,6 +63,12 @@ export function LiquidMetalButton({
 
   const [isHovered, setIsHovered] = useState(false);
   const [isPressed, setIsPressed] = useState(false);
+  /**
+   * Shader di-arm saat interaksi pertama (hover/focus/klik), bukan saat
+   * mount — chunk @paper-design/shaders tidak ikut initial page load;
+   * plate gradient statis tampil sampai shader siap.
+   */
+  const [shaderArmed, setShaderArmed] = useState(false);
   const [ripples, setRipples] = useState<
     Array<{ x: number; y: number; id: number }>
   >([]);
@@ -96,9 +102,10 @@ export function LiquidMetalButton({
   }, [viewMode, icon]);
 
   useEffect(() => {
-    // Variant ghost: plate transparan, shader logam tidak dipakai — jangan
-    // di-load sama sekali (hemat dinamis-import + kerja canvas).
-    if (isGhost) return;
+    // Variant ghost: plate transparan, shader logam tidak dipakai.
+    // Non-ghost: tunggu interaksi pertama (shaderArmed) sebelum dynamic
+    // import — halaman load tanpa mengambil chunk shader.
+    if (isGhost || !shaderArmed) return;
 
     const styleId = "shader-canvas-style-exploded";
     if (!document.getElementById(styleId)) {
@@ -172,9 +179,10 @@ export function LiquidMetalButton({
         shaderMount.current = null;
       }
     };
-  }, [isGhost]);
+  }, [isGhost, shaderArmed]);
 
   const handleMouseEnter = () => {
+    setShaderArmed(true);
     setIsHovered(true);
     shaderMount.current?.setSpeed?.(1);
   };
@@ -186,6 +194,8 @@ export function LiquidMetalButton({
   };
 
   const handleClick = (e: React.MouseEvent<HTMLButtonElement>) => {
+    setShaderArmed(true);
+
     if (shaderMount.current?.setSpeed) {
       shaderMount.current.setSpeed(2.4);
       setTimeout(() => {
@@ -409,6 +419,7 @@ export function LiquidMetalButton({
           <button
             ref={buttonRef}
             onClick={handleClick}
+            onFocus={() => setShaderArmed(true)}
             onMouseEnter={handleMouseEnter}
             onMouseLeave={handleMouseLeave}
             onMouseDown={() => setIsPressed(true)}
@@ -422,7 +433,6 @@ export function LiquidMetalButton({
               background: "transparent",
               border: "none",
               cursor: "pointer",
-              outline: "none",
               zIndex: 40,
               transformStyle: "preserve-3d",
               transform: "translateZ(25px)",

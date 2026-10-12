@@ -1,6 +1,6 @@
-/* eslint-disable @next/next/no-img-element */
 "use client";
 
+import Image from "next/image";
 import { useCallback, useEffect, useRef, useState } from "react";
 
 /**
@@ -42,7 +42,9 @@ export default function ProjectCarousel({ photos, title }: { photos: string[]; t
   }, [total, paused, index]);
 
   if (total <= 1) {
-    return photos[0] ? <img src={photos[0]} alt={title} loading="lazy" /> : null;
+    return photos[0] ? (
+      <Image src={photos[0]} alt={title} width={1280} height={800} sizes="100vw" />
+    ) : null;
   }
 
   const current = ((index % total) + total) % total;
@@ -55,7 +57,14 @@ export default function ProjectCarousel({ photos, title }: { photos: string[]; t
         style={{ transform: `translateX(-${current * 100}%)` }}
       >
         {photos.map((photo, i) => (
-          <img key={i} src={photo} alt={`${title} - ${i + 1}`} loading="lazy" />
+          <Image
+            key={i}
+            src={photo}
+            alt={`${title} - ${i + 1}`}
+            width={1280}
+            height={800}
+            sizes="(max-width: 768px) 100vw, 640px"
+          />
         ))}
       </div>
 

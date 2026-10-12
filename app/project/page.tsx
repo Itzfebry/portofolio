@@ -1,5 +1,5 @@
-/* eslint-disable @next/next/no-img-element */
 import type { Metadata } from "next";
+import Image from "next/image";
 import Link from "next/link";
 
 import Reveal from "@/components/ui/reveal";
@@ -14,6 +14,12 @@ export const metadata: Metadata = {
   title: "Projects",
   description:
     "Kumpulan project Mochammad Ginata Febryansyah — setiap project punya halaman detail sendiri.",
+  alternates: {
+    canonical: "/project",
+  },
+  openGraph: {
+    url: "/project",
+  },
 };
 
 function ArrowUpRight({ className = "arrow h-4 w-4" }: { className?: string }) {
@@ -42,7 +48,7 @@ export default async function ProjectListPage() {
           <div>
             <p className="section-index">Projects</p>
             <h2 className="section-title">
-              What i have <span className="gradient-text">done</span>.
+              What I have <span className="gradient-text">done</span>.
             </h2>
           </div>
           <p className="section-note">{projects.length} case studies</p>
@@ -58,9 +64,21 @@ export default async function ProjectListPage() {
               <article className="project-card">
                 <div className="project-card__media">
                   {project.photos && project.photos.length > 0 ? (
-                    <img src={project.photos[0]} alt={project.title} loading="lazy" />
+                    <Image
+                      src={project.photos[0]}
+                      alt={project.title}
+                      width={1280}
+                      height={800}
+                      sizes="(max-width: 768px) 100vw, 640px"
+                    />
                   ) : project.cover_image ? (
-                    <img src={project.cover_image} alt={project.title} loading="lazy" />
+                    <Image
+                      src={project.cover_image}
+                      alt={project.title}
+                      width={1280}
+                      height={800}
+                      sizes="(max-width: 768px) 100vw, 640px"
+                    />
                   ) : null}
                   <span className="project-card__badge">{project.year ?? project.status}</span>
                 </div>

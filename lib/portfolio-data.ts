@@ -206,7 +206,7 @@ const DEFAULT_SERVICES: Service[] = [
 
 const DEFAULT_SOCIALS: SocialLink[] = [
   { id: "social-github", platform: "GitHub", label: "GitHub", url: "https://github.com" },
-  { id: "social-linkedin", platform: "LinkedIn", label: "LinkedIn", url: "https://linkedin.com" },
+  { id: "social-linkedin", platform: "LinkedIn", label: "LinkedIn", url: "https://www.linkedin.com/in/mochammad-ginata-febryansyah-29708337a/" },
   { id: "social-email", platform: "Email", label: "Email", url: "mailto:hello@example.com" },
 ];
 
