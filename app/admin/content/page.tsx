@@ -4,11 +4,9 @@ import { getPortfolioData } from "@/lib/portfolio-data";
 import {
   deleteEducation,
   deleteExperience,
-  deleteService,
   deleteSkill,
   saveEducation,
   saveExperience,
-  saveService,
   saveSkill,
 } from "../actions";
 import { AdminActionForm } from "../AdminActionForm";
@@ -21,7 +19,7 @@ export default async function AdminContentPage() {
     <div className="space-y-10">
       <div>
         <p className="text-xs uppercase tracking-[0.24em] text-emerald-400">Konten</p>
-        <h1 className="mt-2 text-3xl font-bold">Kelola keahlian, pengalaman, pendidikan, dan layanan</h1>
+        <h1 className="mt-2 text-3xl font-bold">Kelola keahlian, pengalaman, dan pendidikan</h1>
       </div>
 
       <section className="rounded-2xl border border-zinc-800 bg-zinc-950/80 p-5">
@@ -36,13 +34,9 @@ export default async function AdminContentPage() {
             <input name="image" type="file" accept="image/png,image/jpeg,image/webp,image/svg+xml" className="w-full rounded-xl border border-zinc-700 bg-zinc-900 px-3 py-2 text-sm text-zinc-300 file:mr-3 file:rounded-lg file:border-0 file:bg-emerald-500 file:px-3 file:py-1.5 file:font-medium file:text-slate-950" />
             <span className="mt-1 block text-xs text-zinc-500">PNG, JPG, WEBP, SVG · maksimal 2 MB</span>
           </label>
-          <label className="md:col-span-1">
+          <label className="md:col-span-2">
             <span className="mb-2 block text-sm text-zinc-300">Kategori</span>
             <input name="category" className="w-full rounded-xl border border-zinc-700 bg-zinc-900 px-3 py-2.5 text-white outline-none focus:border-emerald-400" placeholder="Frontend" />
-          </label>
-          <label className="md:col-span-1">
-            <span className="mb-2 block text-sm text-zinc-300">Tingkat</span>
-            <input name="level" type="number" min="0" max="100" defaultValue={90} className="w-full rounded-xl border border-zinc-700 bg-zinc-900 px-3 py-2.5 text-white outline-none focus:border-emerald-400" />
           </label>
         </AdminActionForm>
 
@@ -126,36 +120,6 @@ export default async function AdminContentPage() {
           <label>
             <span className="mb-2 block text-sm text-zinc-300">Period</span>
             <input name="period" required className="w-full rounded-xl border border-zinc-700 bg-zinc-900 px-3 py-2.5 text-white outline-none focus:border-emerald-400" placeholder="2015 - 2019" />
-          </label>
-        </AdminActionForm>
-      </section>
-
-      <section className="rounded-2xl border border-zinc-800 bg-zinc-950/80 p-5">
-        <h2 className="text-xl font-semibold">Daftar layanan</h2>
-        <div className="mt-5 space-y-3">
-          {data.services.map((item) => (
-            <div key={item.id} className="flex items-center justify-between gap-4 rounded-xl border border-zinc-800 bg-zinc-900 p-4">
-              <div><p className="font-medium text-white">{item.title}</p><p className="text-sm text-zinc-400">{item.price ?? "Harga belum ditentukan"}</p></div>
-              <AdminActionForm action={deleteService} confirmMessage="Hapus layanan ini?" buttonLabel="Hapus"><input type="hidden" name="id" value={item.id} /></AdminActionForm>
-            </div>
-          ))}
-        </div>
-      </section>
-
-      <section className="rounded-2xl border border-zinc-800 bg-zinc-950/80 p-5">
-        <h2 className="text-xl font-semibold">Layanan</h2>
-        <AdminActionForm action={saveService} className="mt-5 grid gap-4 md:grid-cols-2">
-          <label>
-            <span className="mb-2 block text-sm text-zinc-300">Judul</span>
-            <input name="title" required className="w-full rounded-xl border border-zinc-700 bg-zinc-900 px-3 py-2.5 text-white outline-none focus:border-emerald-400" placeholder="Product design & development" />
-          </label>
-          <label>
-            <span className="mb-2 block text-sm text-zinc-300">Harga</span>
-            <input name="price" className="w-full rounded-xl border border-zinc-700 bg-zinc-900 px-3 py-2.5 text-white outline-none focus:border-emerald-400" placeholder="From $1,500" />
-          </label>
-          <label className="md:col-span-2">
-            <span className="mb-2 block text-sm text-zinc-300">Deskripsi</span>
-            <textarea name="description" required rows={4} className="w-full rounded-xl border border-zinc-700 bg-zinc-900 px-3 py-2.5 text-white outline-none focus:border-emerald-400" placeholder="Jelaskan layanan dan hasil yang dapat diharapkan klien." />
           </label>
         </AdminActionForm>
       </section>

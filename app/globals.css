@@ -1246,7 +1246,23 @@ img { display: block; max-width: 100%; }
 
 /* -------------------------------------------------------------- sections */
 
-.section { position: relative; z-index: 1; width: min(72rem, 100%); margin: 0 auto; padding: 4.5rem 1.25rem; scroll-margin-top: 6.5rem; overflow: hidden; background: var(--background); }
+.section {
+  position: relative;
+  z-index: 1;
+  width: min(72rem, 100%);
+  margin: 0 auto;
+  padding: 4.5rem 1.25rem;
+  scroll-margin-top: 6.5rem;
+  overflow: hidden;
+  background: var(--background);
+  /* Render-skip untuk konten yang belum masuk viewport: browser tidak layout /
+     paint section ini sampai hampir terlihat. `auto` menyimpan tinggi terakhir
+     setelah pernah dirender, sehingga tinggi awal (900px perkiraan) hanya
+     dipakai sekali dan tidak menyebabkan lompatan scrollbar. Efeknya engine
+     bekerja jauh lebih sedikit saat load awal, terutama di HP. */
+  content-visibility: auto;
+  contain-intrinsic-size: auto 900px;
+}
 
 @media (min-width: 1024px) {
   .section { padding: 5.5rem 2rem; }
@@ -1977,6 +1993,12 @@ html:not(.is-entered) .hero__char { opacity: 0; }
 
 /* --------------------------------------------------------------- splash */
 
+/* Kunjungan ulang dalam sesi yang sama: gate pre-paint di <body> menyetel
+   class `splash-skip` di <html> sebelum paint pertama, sehingga splash yang
+   sudah ter-render dari SSR hilang seketika — tanpa flash, tanpa menunggu
+   React hydration. (Splash hanya tayang sekali per sesi browser.) */
+html.splash-skip .splash { display: none !important; }
+
 .splash {
   position: fixed;
   inset: 0;
@@ -2065,12 +2087,17 @@ html:not(.is-entered) .hero__char { opacity: 0; }
   to { transform: translate3d(-8vmax, -5vmax, 0) scale(1.1); }
 }
 
+/* Beam digeser lewat transform (compositor-only), BUKAN `top`. Menganimasikan
+   `top` memindahkan posisi layout tiap frame dan dicatat Chrome sebagai
+   layout shift — ini penyumbang tunggal CLS 0.30 di halaman ini. Dengan
+   translateY hasil visual identik tapi tidak memicu layout. */
 .splash__beam {
   position: absolute;
   top: -35vh;
   left: -10%;
   right: -10%;
   height: 30vh;
+  will-change: transform, opacity;
   background: linear-gradient(
     to bottom,
     transparent,
@@ -2082,10 +2109,10 @@ html:not(.is-entered) .hero__char { opacity: 0; }
 }
 
 @keyframes splash-beam {
-  0% { top: -35vh; opacity: 0; }
+  0% { transform: translate3d(0, 0, 0); opacity: 0; }
   15% { opacity: 1; }
   85% { opacity: 1; }
-  100% { top: 105vh; opacity: 0; }
+  100% { transform: translate3d(0, 140vh, 0); opacity: 0; }
 }
 
 .splash__particle {
@@ -2454,21 +2481,40 @@ html:not(.is-entered) .hero__char { opacity: 0; }
 .cert-deck {
   position: relative;
   height: clamp(25rem, 62vh, 36rem);
+  overflow: hidden;
   touch-action: pan-y;
   outline: none;
+}
+
+/* Embla: container = anak pertama .cert-deck, slide = anak container.
+   `gap` di sini aman — Embla mengukur offsetLeft tiap slide, bukan menghitung
+   lebar secara turunan. */
+.cert-deck__container {
+  display: flex;
+  height: 100%;
+  gap: .9rem;
+}
+
+/* Slide sengaja lebih sempit dari viewport supaya kartu tetangga menyembul
+   ke kiri/kanan (peek) — di situlah efek blur kartu samping terlihat. */
+.cert-deck__slide {
+  position: relative;
+  flex: 0 0 min(46rem, 84%);
+  min-width: 0;
+  height: 100%;
 }
 
 .cert-card {
   position: absolute;
   inset: 0;
-  margin-inline: auto;
-  width: min(48rem, 100%);
   display: flex;
   flex-direction: column;
   gap: .35rem;
   padding: .75rem;
   border-radius: 2rem;
-  transition: transform .75s var(--ease), opacity .55s var(--ease);
+  /* Kartu aktif ↔ samping: blur + redup, tanpa transform apa pun — Embla
+     yang menggeser container, jadi tak ada lagi tumpang-tindih posisi. */
+  transition: filter .55s var(--ease), opacity .55s var(--ease);
   /* Tanpa `will-change` permanen: browser mem-promote layer sendiri selama
      transition berjalan — lihat catatan di blok .reveal. */
 }
@@ -2532,15 +2578,13 @@ html:not(.is-entered) .hero__char { opacity: 0; }
 
 .cert-card__open { margin-top: .8rem; font-size: .85rem; }
 
-/* Kartu bertumpuk (offset > 0): hanya pelat media yang menonjol di belakang
-   kartu aktif. Body/badge disembunyikan agar teksnya tidak tembus lewat
-   kartu aktif yang transparan — alpha glass tidak diubah. */
-.cert-card--stacked .cert-card__body,
-.cert-card--stacked .cert-card__badge {
-  visibility: hidden;
-  /* visible → hidden bertahan sampai animasi kartu selesai, lalu hilang;
-     hidden → visible muncul langsung saat kartu jadi aktif. */
-  transition: visibility .45s;
+/* Kartu non-aktif (peek di samping): blur + redup. `pointer-events` dimatikan
+   supaya klik/drag jatuh ke container Embla, dan `inert` (di JSX) mengeluarkannya
+   dari urutan fokus. */
+.cert-card--side {
+  filter: blur(10px) saturate(.85);
+  opacity: .55;
+  pointer-events: none;
 }
 
 .cert-controls {

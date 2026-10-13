@@ -15,9 +15,35 @@
  * layout mengembalikan animasi hero seperti semula.
  */
 
+import { SPLASH_SESSION_KEY } from "@/lib/splash-session";
+
 const listeners = new Set<() => void>();
 
 let entered = false;
+
+/**
+ * Apakah splash sudah pernah ditonton pada sesi browser ini? (sessionStorage —
+ * hilang saat tab ditutup.) Dipakai agar splash hanya tayang sekali per sesi,
+ * bukan setiap kali kembali ke beranda. Aman dipanggil saat SSR (false).
+ */
+export function hasSplashInSession(): boolean {
+  if (typeof window === "undefined") return false;
+  try {
+    return window.sessionStorage.getItem(SPLASH_SESSION_KEY) === "1";
+  } catch {
+    return false; // storage diblokir (priv mode) → selalu tayang splash
+  }
+}
+
+/** Tandai splash sudah ditonton pada sesi ini. */
+export function markSplashSeen(): void {
+  if (typeof window === "undefined") return;
+  try {
+    window.sessionStorage.setItem(SPLASH_SESSION_KEY, "1");
+  } catch {
+    /* abaikan */
+  }
+}
 
 /** Lepas seluruh animasi masuk hero. Aman dipanggil berkali-kali. */
 export function markEntered(): void {
@@ -42,15 +68,4 @@ export function onEnter(fn: () => void): () => void {
   return () => {
     listeners.delete(fn);
   };
-}
-
-/**
- * Kembalikan ke state awal. Dipanggil saat <OpeningScreen /> unmount, supaya
- * kunjungan berikutnya ke beranda menahan entrance lagi (hero dan splash
- * unmount bersamaan, jadi tidak ada yang tertingal pada state lama).
- */
-export function resetEntered(): void {
-  if (!entered) return;
-  entered = false;
-  document.documentElement.classList.remove("is-entered");
 }

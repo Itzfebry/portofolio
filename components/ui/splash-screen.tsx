@@ -1,9 +1,19 @@
 "use client";
 
 import Image from "next/image";
-import { useCallback, useEffect, useRef, useState, type CSSProperties } from "react";
+import {
+  useCallback,
+  useEffect,
+  useLayoutEffect,
+  useRef,
+  useState,
+  type CSSProperties,
+} from "react";
 
-import { markEntered, resetEntered } from "@/lib/entrance";
+import { markEntered, markSplashSeen, hasSplashInSession } from "@/lib/entrance";
+
+/** `useLayoutEffect` memunculkan warning saat SSR; di server pakai `useEffect`. */
+const useIsoLayoutEffect = typeof window !== "undefined" ? useLayoutEffect : useEffect;
 
 const DURATION = 2400;
 const HOLD = 380;
@@ -54,6 +64,9 @@ function SplashScreen({ onDone }: { onDone: () => void }) {
     // Dilepas di sini — saat splash masih 100% opak — bukan setelah unmount,
     // supaya animasi masuk hero sudah berjalan ketika splash mulai memudar.
     markEntered();
+    // Splash dianggap "sudah ditonton" begitu mulai keluar, sehingga kunjungan
+    // berikut ke beranda pada sesi yang sama tidak mengulanginya.
+    markSplashSeen();
     setLeaving(true);
     timerRef.current = window.setTimeout(() => {
       if (doneRef.current) return;
@@ -91,6 +104,7 @@ function SplashScreen({ onDone }: { onDone: () => void }) {
           if (doneRef.current) return;
           doneRef.current = true;
           markEntered();
+          markSplashSeen();
           onDone();
         }, 900);
       });
@@ -220,20 +234,29 @@ function SplashScreen({ onDone }: { onDone: () => void }) {
 }
 
 export default function OpeningScreen() {
+  // State awal `false` = splash ikut ter-render saat SSR/hidrasi (markup sama
+  // di server dan client, tanpa mismatch). Keputusan "lewati?" diambil pada
+  // layout effect — jalan sebelum paint — jadi di sesi yang sudah menonton
+  // splash, splash langsung dilepas tanpa sempat terlihat satu frame pun.
+  const [skip, setSkip] = useState(false);
   const [done, setDone] = useState(false);
   const handleDone = useCallback(() => setDone(true), []);
 
-  useEffect(() => {
+  useIsoLayoutEffect(() => {
+    if (hasSplashInSession()) {
+      // Sesi ini sudah menonton splash: lepas entrance hero sekarang juga dan
+      // batal render splash. `splash-skip` (dipasang gate pre-paint di layout)
+      // sudah menyembunyikannya lewat CSS; ini membereskan DOM-nya.
+      markEntered();
+      setSkip(true);
+      return;
+    }
     // Jaring pengaman: splash sendiri disembunyikan CSS setelah 7s, jadi hero
     // juga harus dilepas kalaupun logika keluar di SplashScreen tidak jalan.
     const backstop = window.setTimeout(markEntered, BACKSTOP);
-
-    return () => {
-      window.clearTimeout(backstop);
-      resetEntered();
-    };
+    return () => window.clearTimeout(backstop);
   }, []);
 
-  if (done) return null;
+  if (skip || done) return null;
   return <SplashScreen onDone={handleDone} />;
 }

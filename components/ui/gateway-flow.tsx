@@ -2,6 +2,8 @@
 
 import { useEffect, useRef, type CSSProperties } from "react";
 
+import { canvasDpr } from "@/lib/canvas-utils";
+
 export type GatewayFlowProps = {
   className?: string;
   style?: CSSProperties;
@@ -69,7 +71,7 @@ export default function GatewayFlow({
 
     const resize = () => {
       const bounds = canvas.getBoundingClientRect();
-      const pixelRatio = Math.min(window.devicePixelRatio || 1, 2);
+      const pixelRatio = canvasDpr();
       width = Math.max(1, bounds.width);
       height = Math.max(1, bounds.height);
       canvas.width = Math.floor(width * pixelRatio);

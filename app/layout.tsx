@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import { Manrope, Unbounded, Fraunces } from "next/font/google";
 
 import { SITE_LANG, SITE_LOCALE, SITE_NAME, SITE_URL } from "@/lib/site";
+import { SPLASH_SESSION_KEY } from "@/lib/splash-session";
 
 import "./globals.css";
 
@@ -28,6 +29,25 @@ const fraunces = Fraunces({
 const DESCRIPTION =
   "Portofolio Mochammad Ginata Febryansyah (ItzFebryHcx), Frontend Developer dari Bondowoso, Indonesia. " +
   "Karya web app, mobile app, dan UI/UX berbasis Next.js, Laravel, Flutter, dan Supabase.";
+
+/**
+ * Pre-paint gate untuk splash screen.
+ *
+ * Splash hanya tayang sekali per sesi browser. Kalau sesi ini sudah menonton
+ * splash, script inline ini (sinkron saat parse <head>, sebelum paint) menyetel
+ * dua class di <html>:
+ *
+ *  - `is-entered`  → membuka seluruh entrance hero sejak paint pertama, jadi
+ *                    konten tidak pernah tersembunyi menunggu hydration.
+ *  - `splash-skip` → menyembunyikan splash yang sudah ter-render di HTML SSR
+ *                    lewat CSS, sehingga tidak ada flash splash lalu hilang.
+ *
+ * React tidak tahu-menahu soal class tambahan ini; `suppressHydrationWarning`
+ * pada <html> di bawah mencegah React mempertanyakan mismatch kelas tersebut.
+ */
+const splashGateScript = `(function(){try{if(sessionStorage.getItem(${JSON.stringify(
+  SPLASH_SESSION_KEY,
+)})==="1"){var h=document.documentElement;h.classList.add("is-entered","splash-skip");}}catch(e){}})();`;
 
 export const metadata: Metadata = {
   metadataBase: new URL(SITE_URL),
@@ -85,8 +105,17 @@ export const metadata: Metadata = {
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
-    <html lang={SITE_LANG} className="h-full antialiased">
+    <html lang={SITE_LANG} className="h-full antialiased" suppressHydrationWarning>
       <body className={`min-h-full bg-zinc-950 text-white ${unbounded.variable} ${manrope.variable} ${fraunces.variable}`}>
+        {/* Preconnect diangkat React 19 ke <head>; kalau tidak, browser tetap
+            memakainya — link preconnect sah berada di body. */}
+        <link rel="preconnect" href="https://cdn.simpleicons.org" crossOrigin="" />
+        {/* Gate splash: harus dieksekusi sinkron saat parse, SEBELUM markup
+            splash/hero di bawahnya selesai di-parse — jadi sebelum paint
+            pertama. Taruh di awal body, bukan memakai next/script
+            beforeInteractive (inline di situ dieksekusi nanti lewat antrean
+            self.__next_s, terlambat untuk gate ini). */}
+        <script dangerouslySetInnerHTML={{ __html: splashGateScript }} />
         {children}
       </body>
     </html>

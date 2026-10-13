@@ -2,6 +2,8 @@
 
 import { useEffect, useRef } from "react";
 
+import { canvasDpr, isPageScrolling } from "@/lib/canvas-utils";
+
 type SectionBgProps = {
   className?: string;
   variant?: "grid" | "particles" | "waves" | "pulse" | "dots";
@@ -33,10 +35,15 @@ export default function SectionBg({
      * mount. false = keluar viewport: rAF distop, bukan cuma di-skip.
      */
     let inView = false;
+    /**
+     * Hold frame saat halaman scroll — canvas ini menggambar area section
+     * penuh tiap frame dan bersaing dengan compositor saat digulir.
+     */
+    let pausedAt = 0;
 
     const resize = () => {
       const rect = canvas.getBoundingClientRect();
-      const dpr = Math.min(2, window.devicePixelRatio || 1);
+      const dpr = canvasDpr();
       width = rect.width;
       height = rect.height;
       canvas.width = width * dpr;
@@ -150,9 +157,27 @@ export default function SectionBg({
       }
     };
 
+    let startTime = performance.now();
+
     const draw = (time: number) => {
       frameRef.current = 0;
-      const t = time * 0.001;
+
+      // Hold saat scroll: frame terakhir ditahan (tidak dihapus), jadi tampilan
+      // identik dan loop siap resume begitu scroll berhenti (~200ms kemudian).
+      // Reduced-motion tidak di-hold: ia hanya butuh satu frame statis, dan
+      // menahannya bisa membuat canvas kosong permanen.
+      if (!reduced && isPageScrolling()) {
+        if (!pausedAt) pausedAt = time;
+        if (inView) frameRef.current = requestAnimationFrame(draw);
+        return;
+      }
+      if (pausedAt) {
+        // Geser startTime supaya elapsed tidak melompat selama jeda.
+        startTime += time - pausedAt;
+        pausedAt = 0;
+      }
+
+      const t = (time - startTime) * 0.001;
 
       switch (variant) {
         case "grid":

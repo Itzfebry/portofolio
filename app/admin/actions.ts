@@ -516,8 +516,6 @@ export async function saveSkill(
   await requireAdminSession();
   const title = String(formData.get("name") ?? "").trim();
   const category = String(formData.get("category") ?? "General").trim();
-  const parsedLevel = Number(formData.get("level") ?? 80);
-  const level = Number.isFinite(parsedLevel) ? Math.min(100, Math.max(0, parsedLevel)) : 80;
   const image = formData.get("image");
 
   if (!title) {
@@ -550,11 +548,12 @@ export async function saveSkill(
     imageUrl = supabase.storage.from("skill-images").getPublicUrl(imagePath).data.publicUrl;
   }
 
+  // `level` sengaja tidak dikirim: form sudah tidak punya field Tingkat,
+  // dan kolom DB punya default 80 — nilai lama tetap utuh saat update.
   const payload = {
     id: String(formData.get("id") ?? crypto.randomUUID()),
     name: title,
     category: category || "General",
-    level: Math.min(100, Math.max(0, level)),
     image_url: imageUrl,
     updated_at: new Date().toISOString(),
   };
@@ -636,38 +635,6 @@ export async function saveEducation(
   revalidatePath("/admin/content");
   revalidatePath("/");
   return { success: "Pendidikan berhasil disimpan." };
-}
-
-export async function saveService(
-  _previousState: AdminSaveState,
-  formData: FormData,
-): Promise<AdminSaveState> {
-  await requireAdminSession();
-  const payload = {
-    id: String(formData.get("id") ?? crypto.randomUUID()),
-    title: String(formData.get("title") ?? "").trim(),
-    description: String(formData.get("description") ?? "").trim(),
-    price: String(formData.get("price") ?? "").trim() || null,
-    updated_at: new Date().toISOString(),
-  };
-
-  if (!payload.title || !payload.description) {
-    return { error: "Judul dan deskripsi layanan wajib diisi." };
-  }
-
-  const admin = getAdminClient();
-  if ("error" in admin) return { error: admin.error };
-  const supabase = admin.client;
-  const { error } = await supabase.from("services").upsert(payload, { onConflict: "id" });
-
-  if (error) {
-    return { error: error.message || "Layanan tidak dapat disimpan." };
-  }
-
-  revalidatePath("/admin");
-  revalidatePath("/admin/content");
-  revalidatePath("/");
-  return { success: "Layanan berhasil disimpan." };
 }
 
 export async function saveProfile(
@@ -764,7 +731,7 @@ export async function saveSocialLink(
 }
 
 async function deleteAdminRecord(
-  table: "social_links" | "skills" | "experiences" | "education" | "services",
+  table: "social_links" | "skills" | "experiences" | "education",
   id: string,
   label: string,
 ): Promise<AdminSaveState> {
@@ -811,11 +778,4 @@ export async function deleteEducation(
   formData: FormData,
 ): Promise<AdminSaveState> {
   return deleteAdminRecord("education", String(formData.get("id") ?? "").trim(), "Pendidikan");
-}
-
-export async function deleteService(
-  _previousState: AdminSaveState,
-  formData: FormData,
-): Promise<AdminSaveState> {
-  return deleteAdminRecord("services", String(formData.get("id") ?? "").trim(), "Layanan");
 }

@@ -2,6 +2,8 @@
 
 import { useEffect, useRef } from "react";
 
+import { canvasDpr } from "@/lib/canvas-utils";
+
 type VortexBgProps = {
   className?: string;
   lineCount?: number;
@@ -116,28 +118,65 @@ export default function VortexBg({
      * mount. false = keluar viewport: rAF distop, bukan cuma di-skip.
      */
     let inView = false;
+    /**
+     * Saat halaman scroll, frame ditahan (bukan dihapus) supaya menggambar
+     * canvas viewport-penuh tidak bersaing dengan compositor. `pausedAt`
+     * mencatat kapan kita berhenti; saat lanjut, `startTime` digeser oleh
+     * durasi jeda agar elapsed tidak melompat dan gerakan halus kembali
+     * seperti tidak pernah berhenti.
+     */
+    let pausedAt = 0;
+    let dirty = true;
 
     const resize = () => {
       const rect = canvas.getBoundingClientRect();
-      const dpr = Math.min(2, window.devicePixelRatio || 1);
+      const dpr = canvasDpr();
       width = rect.width;
       height = rect.height;
       canvas.width = width * dpr;
       canvas.height = height * dpr;
       ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+      dirty = true;
     };
 
     resize();
     window.addEventListener("resize", resize, { passive: true });
 
     const noise = noiseRef.current;
+    let startTime = performance.now();
 
     const draw = (time: number) => {
       frameRef.current = 0;
+
+      // Tahan frame saat scroll, atau saat hero sudah tertutup sheet About
+      // (is-hero-covered): VortexBg dipasang di hero yang di-sticky, jadi meski
+      // sudah tak terlihat, IntersectionObserver tetap melaporkan "intersecting".
+      // Tanpa cek ini, canvas full-viewport tetap digambar untuk sisa halaman.
+      // Reduced-motion tidak di-hold: ia cuma butuh satu frame statis, dan
+      // menahannya bisa membuat canvas kosong permanen (loop tak resume).
+      const root = document.documentElement;
+      const held =
+        !reduced &&
+        (root.classList.contains("is-scrolling") ||
+          root.classList.contains("is-hero-covered"));
+      if (held || (reduced && !dirty)) {
+        if (!pausedAt) pausedAt = time;
+        // Idle loop tetap dischedule saat visible & animasi, agar bisa resume.
+        if (inView && !reduced) frameRef.current = requestAnimationFrame(draw);
+        return;
+      }
+      if (pausedAt) {
+        // Geser startTime seolah jeda tidak pernah terjadi.
+        startTime += time - pausedAt;
+        pausedAt = 0;
+      }
+      dirty = false;
+
+      // elapsed berbasis startTime (bukan time mentah) supaya kontinu setelah
+      // ditahan.
+      const t = ((time - startTime) * 0.001) * speed;
+
       ctx.clearRect(0, 0, width, height);
-
-      const t = time * 0.001 * speed;
-
       for (let line = 0; line < lineCount; line++) {
         const lineProgress = line / lineCount;
         const hueShift = lineProgress * 60;

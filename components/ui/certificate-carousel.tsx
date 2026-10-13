@@ -1,15 +1,11 @@
 "use client";
 
 import Image from "next/image";
-import { useRef, useState, type CSSProperties, type PointerEvent } from "react";
+import { useCallback, useEffect, useState } from "react";
+import useEmblaCarousel from "embla-carousel-react";
 import { ChevronLeft, ChevronRight, ExternalLink } from "lucide-react";
 
 import type { Certificate } from "@/lib/portfolio-data";
-
-/** Berapa banyak kartu yang terlihat menumpuk di belakang kartu aktif. */
-const STACK_VISIBLE = 3;
-/** Geser minimum (px) sebelum drag dihitung sebagai slide. */
-const SWIPE_PX = 48;
 
 type Props = { items: Certificate[] };
 
@@ -17,21 +13,50 @@ function pad(value: number) {
   return String(value).padStart(2, "0");
 }
 
-/** Wrap aman: daftar bisa berkurang (hapus dari admin) tanpa reset state. */
-function wrap(index: number, total: number) {
-  if (!total) return 0;
-  return ((index % total) + total) % total;
-}
-
 /**
- * Carousel sertifikat bergaya stack: kartu aktif di depan, kartu berikutnya
- * menumpuk miring ke samping kanan, dan navigasi menggeser tumpukan itu ke
- * tengah (slide samping).
+ * Carousel sertifikat biasa: Embla memegang penuh drag/momentum/snap dan
+ * menggeser container flex — kartu tidak pernah di-transform manual.
+ * Slide lebih sempit dari viewport (lihat `.cert-deck__slide`), jadi kartu
+ * tetangga ikut terlihat menyamping dan diberi class `cert-card--side`
+ * (blur + redup) lewat CSS. Tanpa posisi absolut yang saling menumpuk,
+ * tak ada bug tumpang-tindih/stack 3D.
  */
 export default function CertificateCarousel({ items }: Props) {
-  const [active, setActive] = useState(0);
-  const pointer = useRef<{ id: number; x: number } | null>(null);
   const total = items.length;
+  const [active, setActive] = useState(0);
+  const [emblaRef, emblaApi] = useEmblaCarousel({ loop: total > 1, align: "center" });
+
+  const onSelect = useCallback(() => {
+    if (emblaApi) setActive(emblaApi.selectedScrollSnap());
+  }, [emblaApi]);
+
+  useEffect(() => {
+    if (!emblaApi) return;
+    // Sinkron awal tidak perlu: Embla selalu mulai di snap 0 = state `active`
+    // awal. Cukup dengarkan perubahan berikutnya.
+    emblaApi.on("select", onSelect);
+    emblaApi.on("reInit", onSelect);
+    return () => {
+      emblaApi.off("select", onSelect);
+      emblaApi.off("reInit", onSelect);
+    };
+  }, [emblaApi, onSelect]);
+
+  const go = useCallback(
+    (step: number) => {
+      if (!emblaApi) return;
+      if (step > 0) emblaApi.scrollNext();
+      else emblaApi.scrollPrev();
+    },
+    [emblaApi],
+  );
+
+  const scrollTo = useCallback(
+    (index: number) => {
+      emblaApi?.scrollTo(index);
+    },
+    [emblaApi],
+  );
 
   if (!total) {
     return (
@@ -42,28 +67,13 @@ export default function CertificateCarousel({ items }: Props) {
     );
   }
 
-  const activeIndex = wrap(active, total);
-
-  const go = (step: number) => setActive((current) => current + step);
-
-  const handlePointerDown = (event: PointerEvent<HTMLDivElement>) => {
-    pointer.current = { id: event.pointerId, x: event.clientX };
-  };
-
-  const handlePointerUp = (event: PointerEvent<HTMLDivElement>) => {
-    const start = pointer.current;
-    pointer.current = null;
-    if (!start || start.id !== event.pointerId) return;
-    const delta = event.clientX - start.x;
-    if (Math.abs(delta) < SWIPE_PX) return;
-    go(delta < 0 ? 1 : -1);
-  };
-
+  const activeIndex = ((active % total) + total) % total;
   const current = items[activeIndex];
 
   return (
     <div className="cert-carousel">
       <div
+        ref={emblaRef}
         className="cert-deck"
         role="group"
         aria-roledescription="carousel"
@@ -79,74 +89,63 @@ export default function CertificateCarousel({ items }: Props) {
             go(-1);
           }
         }}
-        onPointerDown={handlePointerDown}
-        onPointerUp={handlePointerUp}
-        onPointerCancel={() => {
-          pointer.current = null;
-        }}
       >
+        {/* Embla: container = anak pertama root, slides = anak container. */}
+        <div className="cert-deck__container">
         {items.map((item, index) => {
-          const offset = (index - activeIndex + total) % total;
-          const hidden = offset > STACK_VISIBLE;
-
-          const style = {
-            "--offset": offset,
-            zIndex: total - offset,
-            transform: hidden
-              ? "translate3d(64%, 0, 0) scale(.86)"
-              : `translate3d(${offset * 4.5}%, ${offset * 1.6}px, 0) scale(${1 - offset * 0.05}) rotate(${offset * 1.4}deg)`,
-            opacity: hidden ? 0 : 1 - offset * 0.16,
-            pointerEvents: offset === 0 ? "auto" : "none",
-          } as CSSProperties;
+          const isActive = index === activeIndex;
 
           return (
-            <article
-              key={item.id}
-              className={`cert-card glass rgb-ring ${offset !== 0 ? "cert-card--stacked" : ""}`}
-              style={style}
-              aria-hidden={offset !== 0}
-              aria-label={`${index + 1} dari ${total}: ${item.title}`}
-            >
-              <div className="cert-card__media">
-                {item.file_type === "pdf" ? (
-                  item.preview_url ? (
-                    // Preview JPEG halaman-1 — PDF tidak bisa dirender di
-                    // <iframe> pada Chrome Android & Safari iOS.
-                    <Image src={item.preview_url} alt={item.title} width={1200} height={800} sizes="(max-width: 768px) 92vw, 720px" />
+            <div key={item.id} className="cert-deck__slide">
+              <article
+                className={`cert-card glass rgb-ring ${isActive ? "" : "cert-card--side"}`}
+                aria-hidden={!isActive}
+                // React 19: inert mencegah fokus/interaksi di kartu blur.
+                inert={!isActive}
+                aria-label={`${index + 1} dari ${total}: ${item.title}`}
+              >
+                <div className="cert-card__media">
+                  {item.file_type === "pdf" ? (
+                    item.preview_url ? (
+                      // Preview JPEG halaman-1 — PDF tidak bisa dirender di
+                      // <iframe> pada Chrome Android & Safari iOS.
+                      <Image src={item.preview_url} alt={item.title} width={1200} height={800} sizes="(max-width: 768px) 92vw, 720px" />
+                    ) : (
+                      <iframe
+                        className="cert-card__frame"
+                        src={`${item.file_url}#toolbar=0&view=FitH`}
+                        title={item.title}
+                        loading="lazy"
+                      />
+                    )
                   ) : (
-                    <iframe
-                      className="cert-card__frame"
-                      src={`${item.file_url}#toolbar=0&view=FitH`}
-                      title={item.title}
-                      loading="lazy"
-                    />
-                  )
-                ) : (
-                  <Image src={item.file_url} alt={item.title} width={1200} height={800} sizes="(max-width: 768px) 92vw, 720px" />
-                )}
-                <span className="cert-card__badge">{item.file_type === "pdf" ? "PDF" : "Sertifikat"}</span>
-              </div>
+                    <Image src={item.file_url} alt={item.title} width={1200} height={800} sizes="(max-width: 768px) 92vw, 720px" />
+                  )}
+                  <span className="cert-card__badge">{item.file_type === "pdf" ? "PDF" : "Sertifikat"}</span>
+                </div>
 
-              <div className="cert-card__body">
-                <p className="cert-card__cat">{item.category}</p>
-                <h3 className="cert-card__title">{item.title}</h3>
-                <p className="cert-card__meta">
-                  {item.issuer}
-                  {item.issued_at ? ` · ${item.issued_at}` : ""}
-                  {item.credential_id ? ` · ID ${item.credential_id}` : ""}
-                </p>
-                <a
-                  className="link-arrow cert-card__open"
-                  href={item.file_url}
-                  target="_blank"
-                  rel="noreferrer"
-                >
-                  Buka file <ExternalLink className="h-4 w-4" />
-                </a>
-              </div>
-            </article>
+                <div className="cert-card__body">
+                  <p className="cert-card__cat">{item.category}</p>
+                  <h3 className="cert-card__title">{item.title}</h3>
+                  <p className="cert-card__meta">
+                    {item.issuer}
+                    {item.issued_at ? ` · ${item.issued_at}` : ""}
+                    {item.credential_id ? ` · ID ${item.credential_id}` : ""}
+                  </p>
+                  <a
+                    className="link-arrow cert-card__open"
+                    href={item.file_url}
+                    target="_blank"
+                    rel="noreferrer"
+                  >
+                    Buka file <ExternalLink className="h-4 w-4" />
+                  </a>
+                </div>
+              </article>
+            </div>
           );
         })}
+        </div>
       </div>
 
       <div className="cert-controls">
@@ -160,7 +159,7 @@ export default function CertificateCarousel({ items }: Props) {
               key={item.id}
               type="button"
               className={`cert-dot ${index === activeIndex ? "is-active" : ""}`}
-              onClick={() => setActive(index)}
+              onClick={() => scrollTo(index)}
               aria-label={`Ke sertifikat ${index + 1}`}
               aria-current={index === activeIndex}
             />

@@ -29,15 +29,19 @@ export default function OpeningText({
 
   useEffect(() => {
     const reduced = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
-    if (reduced) {
-      revealedRef.current = text.length;
-      setRevealed(text.length);
-      return;
-    }
 
     let interval = 0;
 
+    // `start` dipanggil lewat sinyal entrance (onEnter) — baik langsung saat
+    // hero sudah masuk, maupun saat markEntered() nanti berjalan. Semua setState
+    // hidup di callback ini, bukan di badan effect.
     const start = () => {
+      if (reduced) {
+        revealedRef.current = text.length;
+        setRevealed(text.length);
+        return;
+      }
+
       const startedAt = performance.now() + delay;
       interval = window.setInterval(() => {
         const now = performance.now();

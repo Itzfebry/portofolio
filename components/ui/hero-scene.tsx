@@ -17,8 +17,6 @@ type Stat = { value: string; label: string };
 
 const ROLE_TEXT = "Junior Web & Mobile Developer";
 const WHATSAPP_URL = "https://wa.me/6287786445013";
-const ROLE_GRADIENT =
-  "linear-gradient(100deg, #ffffff 0%, #67e8f9 34%, #a78bfa 66%, #f9a8d4 100%)";
 
 type HeroSceneProps = {
   profile: Profile;
