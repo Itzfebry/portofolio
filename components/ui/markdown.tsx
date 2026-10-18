@@ -10,12 +10,25 @@ type MarkdownProps = {
 
 const DEFAULT_CONTAINER = "space-y-4";
 const DEFAULT_PARAGRAPH = "whitespace-pre-line";
-const INLINE_CODE = "rounded bg-zinc-800/80 px-1.5 py-0.5 font-mono text-[0.9em] text-emerald-200";
+const INLINE_CODE =
+  "rounded bg-zinc-800/80 px-1.5 py-0.5 font-mono text-[0.9em] text-emerald-200 [overflow-wrap:anywhere]";
+/** Mobile: baris panjang di-wrap (`pre-wrap`) supaya tidak keluar kartu/terpotong.
+ *  ≥sm kembali `pre` + scroll horizontal, kode tetap rapi satu baris. */
 const CODE_BLOCK =
-  "overflow-x-auto rounded-2xl border border-zinc-700 bg-zinc-950/80 p-4 text-left font-mono text-sm leading-6 text-zinc-200";
+  "max-w-full overflow-x-auto whitespace-pre-wrap [overflow-wrap:anywhere] rounded-2xl border border-zinc-700 bg-zinc-950/80 p-4 text-left font-mono text-sm leading-6 text-zinc-200 sm:whitespace-pre sm:[overflow-wrap:normal]";
+/** Judul di dalam deskripsi: `#`–`######` render sebagai heading, bukan marker mentah. */
+const HEADING_LEVEL_1 = "text-xl sm:text-2xl font-semibold tracking-tight text-zinc-50";
+const HEADING_LEVEL_2 = "text-lg sm:text-xl font-semibold tracking-tight text-zinc-100";
 /** Marker di luar (list-outside via pl) supaya rapi saat kontainer memakai text-justify. */
 const BULLET_LIST = "list-disc space-y-1.5 pl-5 marker:text-emerald-400";
 const ORDERED_LIST = "list-decimal space-y-1.5 pl-5 marker:text-emerald-400";
+/** Tabel: wrap sel (overflow-wrap:anywhere) → muat di mobile tanpa keluar kartu. */
+const TABLE_WRAPPER = "max-w-full overflow-x-auto";
+const TABLE = "w-full table-fixed border-collapse text-left text-[.95rem]";
+const TABLE_HEAD_CELL =
+  "border-b border-white/20 px-3 pb-2 align-top font-semibold text-zinc-50 [overflow-wrap:anywhere]";
+const TABLE_CELL =
+  "border-b border-white/8 px-3 py-2.5 align-top text-zinc-300 [overflow-wrap:anywhere]";
 
 /** Render markdown aman (React node murni, tanpa innerHTML). */
 export function Markdown({ text, className, paragraphClassName }: MarkdownProps) {
@@ -42,6 +55,51 @@ export function Markdown({ text, className, paragraphClassName }: MarkdownProps)
                 <li key={`i-${itemIndex}`}>{renderInline(item, `u${index}-${itemIndex}`)}</li>
               ))}
             </ul>
+          )
+        ) : block.type === "table" ? (
+          <div key={`b-${index}`} className={TABLE_WRAPPER}>
+            <table className={TABLE}>
+              {block.head.length > 0 ? (
+                <thead>
+                  <tr>
+                    {block.head.map((cell, cellIndex) => (
+                      <th
+                        key={`c-${cellIndex}`}
+                        style={{ textAlign: block.align[cellIndex] ?? "left" }}
+                        className={TABLE_HEAD_CELL}
+                      >
+                        {renderInline(cell, `th${index}-${cellIndex}`)}
+                      </th>
+                    ))}
+                  </tr>
+                </thead>
+              ) : null}
+              <tbody>
+                {block.rows.map((row, rowIndex) => (
+                  <tr key={`r-${rowIndex}`}>
+                    {row.map((cell, cellIndex) => (
+                      <td
+                        key={`c-${cellIndex}`}
+                        style={{ textAlign: block.align[cellIndex] ?? "left" }}
+                        className={TABLE_CELL}
+                      >
+                        {renderInline(cell, `td${index}-${rowIndex}-${cellIndex}`)}
+                      </td>
+                    ))}
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        ) : block.type === "heading" ? (
+          block.level >= 4 ? (
+            <h4 key={`b-${index}`} className={HEADING_LEVEL_2}>
+              {renderInline(block.text, `h${index}`)}
+            </h4>
+          ) : (
+            <h3 key={`b-${index}`} className={HEADING_LEVEL_1}>
+              {renderInline(block.text, `h${index}`)}
+            </h3>
           )
         ) : (
           <p

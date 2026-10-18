@@ -1395,6 +1395,8 @@ img { display: block; max-width: 100%; }
   font-weight: 620;
   letter-spacing: -.035em;
   line-height: 1.06;
+  /* Judul panjang di layar sempit: pecah kata, jangan luber keluar sheet. */
+  overflow-wrap: break-word;
 }
 
 .section-note { font-size: .84rem; color: rgba(161, 161, 161, .7); }
@@ -1627,6 +1629,8 @@ img { display: block; max-width: 100%; }
 .project-card__body { display: flex; flex-direction: column; flex: 1; padding: 1.25rem 1rem 1rem; }
 
 .chip {
+  max-width: 100%;
+  overflow-wrap: anywhere;
   padding: .32rem .7rem;
   border: 1px solid rgba(255, 255, 255, .12);
   border-radius: .6rem;
@@ -2672,6 +2676,7 @@ html.splash-skip .splash { display: none !important; }
 }
 
 .pdetail-meta__item {
+  min-width: 0;
   padding: 1rem 1.1rem;
   border: 1px solid rgba(255, 255, 255, .09);
   border-radius: 1.25rem;
@@ -2686,7 +2691,7 @@ html.splash-skip .splash { display: none !important; }
   color: rgba(161, 161, 161, .72);
 }
 
-.pdetail-meta__value { margin-top: .5rem; font-size: .98rem; font-weight: 550; color: rgba(244, 244, 245, .92); }
+.pdetail-meta__value { margin-top: .5rem; font-size: .98rem; font-weight: 550; color: rgba(244, 244, 245, .92); overflow-wrap: anywhere; }
 
 .pdetail-gallery { display: grid; gap: 1rem; grid-template-columns: repeat(auto-fit, minmax(16rem, 1fr)); }
 
@@ -2710,6 +2715,8 @@ html.splash-skip .splash { display: none !important; }
   display: inline-flex;
   align-items: center;
   gap: .45rem;
+  max-width: 100%;
+  min-width: 0;
   padding: .38rem .8rem;
   border: 1px solid rgba(255, 255, 255, .1);
   border-radius: 999px;
@@ -2717,6 +2724,10 @@ html.splash-skip .splash { display: none !important; }
   font-size: .8rem;
   line-height: 1.45;
   color: rgba(228, 228, 231, .86);
+  /* Teks panjang di mobile: wrap di dalam pill, jangan keluar kartu. */
+  white-space: normal;
+  overflow-wrap: anywhere;
+  text-align: left;
 }
 
 .pdetail-highlight::before {

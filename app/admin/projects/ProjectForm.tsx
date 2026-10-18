@@ -246,7 +246,7 @@ export function ProjectForm({ project }: { project?: Project }) {
           rows={5}
           defaultValue={project?.description ?? ""}
           placeholder="Detail proyek"
-          hint="Markdown: **tebal**, *miring*, `code`, ```blok bash```, daftar `- item`, baris kosong = paragraf baru."
+          hint="Markdown: **tebal**, *miring*, `code`, ```blok bash```, daftar `- item`, judul `# Judul`, tabel `| a | b |` + `| --- |`, baris kosong = paragraf baru."
         />
       </div>
 
@@ -326,7 +326,7 @@ export function ProjectForm({ project }: { project?: Project }) {
               rows={4}
               defaultValue={project?.detail_description ?? ""}
               placeholder="Cerita panjang project: masalah, proses, hasil."
-              hint="Mendukung bold, italic, code, code block bash, daftar bullet (`- item`), dan paragraf (baris kosong)."
+              hint="Mendukung bold, italic, code, code block bash, daftar bullet (`- item`), judul (`## Judul`), tabel (`| Kolom | Kolom |` dipisah `| --- |`), dan paragraf (baris kosong). Tabel menyesuaikan lebar layar, aman di mobile."
             />
           </div>
         </div>

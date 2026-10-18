@@ -118,7 +118,7 @@ export default async function ProjectDetailPage({ params }: { params: Promise<{ 
             <p className="section-index">Overview</p>
             <Markdown
               text={description}
-              className="mt-5 text-justify text-lg leading-8 text-zinc-300"
+              className="mt-5 text-left sm:text-justify text-lg leading-8 text-zinc-300 [overflow-wrap:anywhere]"
             />
 
             <div className="mt-6 flex flex-wrap gap-2">

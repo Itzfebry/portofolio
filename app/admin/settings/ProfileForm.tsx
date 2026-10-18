@@ -65,7 +65,7 @@ export function ProfileForm({ profile }: ProfileFormProps) {
           label="Biodata"
           rows={4}
           defaultValue={profile.bio}
-          hint="Markdown: **tebal**, *miring*, `code`, ```blok bash```, daftar `- item`, baris kosong = paragraf baru."
+          hint="Markdown: **tebal**, *miring*, `code`, ```blok bash```, daftar `- item`, judul `# Judul`, tabel `| a | b |` + `| --- |`, baris kosong = paragraf baru."
         />
       </div>
       <div className="md:col-span-2 flex justify-end">

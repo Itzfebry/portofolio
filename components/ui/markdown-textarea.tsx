@@ -29,6 +29,13 @@ const TOOLS: Tool[] = [
   { key: "code", title: "Code inline (Ctrl+E)", before: "`", after: "`", placeholder: "kode" },
   { key: "block", title: "Code block / bash", before: "```bash\n", after: "\n```", placeholder: "npm run build" },
   { key: "bullet", title: "Daftar bullet", before: "\n- ", after: "", placeholder: "item" },
+  {
+    key: "table",
+    title: "Tabel (2 kolom)",
+    before: "\n\n| Kolom A | Kolom B |\n| --- | --- |\n| ",
+    after: " | isi |\n\n",
+    placeholder: "isi",
+  },
   { key: "paragraph", title: "Paragraf baru", before: "\n\n", after: "", placeholder: "" },
 ];
 
@@ -109,7 +116,9 @@ export function MarkdownTextarea({
                 ? ">_"
                 : tool.key === "bullet"
                   ? "•"
-                  : tool.key === "bold"
+                  : tool.key === "table"
+                    ? "▦"
+                    : tool.key === "bold"
                     ? "B"
                     : tool.key === "italic"
                       ? "I"
