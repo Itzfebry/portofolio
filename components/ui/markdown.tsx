@@ -6,6 +6,10 @@ type MarkdownProps = {
   text?: string | null;
   className?: string;
   paragraphClassName?: string;
+  /** "project": heading pakai gradient-text, penomoran list pakai cyan. */
+  variant?: "default" | "project";
+  /** Ukuran heading varian project (default "besar"), dari pengaturan admin. */
+  headingSize?: "normal" | "besar" | "ekstra";
 };
 
 const DEFAULT_CONTAINER = "space-y-4";
@@ -22,6 +26,18 @@ const HEADING_LEVEL_2 = "text-lg sm:text-xl font-semibold tracking-tight text-zi
 /** Marker di luar (list-outside via pl) supaya rapi saat kontainer memakai text-justify. */
 const BULLET_LIST = "list-disc space-y-1.5 pl-5 marker:text-emerald-400";
 const ORDERED_LIST = "list-decimal space-y-1.5 pl-5 marker:text-emerald-400";
+/** Varian project: penomoran list ditulis manual sebagai span cyan. */
+const PROJECT_MARKER = "text-cyan-400 font-semibold";
+/**
+ * Skala ukuran heading varian project — diatur dari admin (profil).
+ * `#` (judul kecil) sedikit lebih kecil dari `##` (subjudul utama):
+ * indeks [0] untuk `#`, [1] untuk `##`.
+ */
+const HEADING_SCALE: Record<"normal" | "besar" | "ekstra", [string, string]> = {
+  normal: ["text-lg sm:text-xl font-bold", "text-xl sm:text-2xl font-bold"],
+  besar: ["text-xl sm:text-2xl font-bold", "text-2xl sm:text-3xl font-bold"],
+  ekstra: ["text-2xl sm:text-3xl font-extrabold", "text-3xl sm:text-4xl font-extrabold"],
+};
 /** Tabel: wrap sel (overflow-wrap:anywhere) → muat di mobile tanpa keluar kartu. */
 const TABLE_WRAPPER = "max-w-full overflow-x-auto";
 const TABLE = "w-full table-fixed border-collapse text-left text-[.95rem]";
@@ -30,8 +46,21 @@ const TABLE_HEAD_CELL =
 const TABLE_CELL =
   "border-b border-white/8 px-3 py-2.5 align-top text-zinc-300 [overflow-wrap:anywhere]";
 
+function projectHeadingClass(base: string) {
+  // `pb-1` memberi ruang kecil SETELAH heading (ruang sebelum tetap dari space-y-4).
+  return `${base} gradient-text pb-1`;
+}
+
 /** Render markdown aman (React node murni, tanpa innerHTML). */
-export function Markdown({ text, className, paragraphClassName }: MarkdownProps) {
+export function Markdown({
+  text,
+  className,
+  paragraphClassName,
+  variant = "default",
+  headingSize = "besar",
+}: MarkdownProps) {
+  const project = variant === "project";
+  const [h1Class, h2Class] = project ? HEADING_SCALE[headingSize] : [HEADING_LEVEL_1, HEADING_LEVEL_2];
   const blocks = parseMarkdown(text);
   if (blocks.length === 0) return null;
 
@@ -44,9 +73,12 @@ export function Markdown({ text, className, paragraphClassName }: MarkdownProps)
           </pre>
         ) : block.type === "list" ? (
           block.ordered ? (
-            <ol key={`b-${index}`} className={ORDERED_LIST}>
+            <ol key={`b-${index}`} className={project ? "space-y-1.5 pl-5 list-none" : ORDERED_LIST}>
               {block.items.map((item, itemIndex) => (
-                <li key={`i-${itemIndex}`}>{renderInline(item, `o${index}-${itemIndex}`)}</li>
+                <li key={`i-${itemIndex}`}>
+                  {project ? <span className={PROJECT_MARKER}>{itemIndex + 1}. </span> : null}
+                  {renderInline(item, `o${index}-${itemIndex}`)}
+                </li>
               ))}
             </ol>
           ) : (
@@ -93,9 +125,13 @@ export function Markdown({ text, className, paragraphClassName }: MarkdownProps)
           </div>
         ) : block.type === "heading" ? (
           block.level >= 4 ? (
-            <h4 key={`b-${index}`} className={HEADING_LEVEL_2}>
+            <h4 key={`b-${index}`} className={project ? projectHeadingClass(h2Class) : HEADING_LEVEL_2}>
               {renderInline(block.text, `h${index}`)}
             </h4>
+          ) : project ? (
+            <h3 key={`b-${index}`} className={projectHeadingClass(h1Class)}>
+              {renderInline(block.text, `h${index}`)}
+            </h3>
           ) : (
             <h3 key={`b-${index}`} className={HEADING_LEVEL_1}>
               {renderInline(block.text, `h${index}`)}

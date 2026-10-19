@@ -9,6 +9,7 @@ import { createAdminSupabaseClient } from "@/lib/supabase/admin";
 import { renderPdfFirstPageJpeg } from "@/lib/pdf-preview";
 import { ADMIN_SESSION_COOKIE, adminSessionValue, requireAdminSession } from "@/lib/admin";
 import { createServerSupabaseClient } from "@/lib/supabase/server";
+import { parseHeadingSize } from "@/lib/portfolio-data";
 
 export type AdminLoginState = {
   error?: string;
@@ -662,6 +663,7 @@ export async function saveProfile(
     email: String(formData.get("email") ?? "").trim() || "hello@example.com",
     bio: String(formData.get("bio") ?? "").trim() || "I build digital products.",
     headline: String(formData.get("headline") ?? "").trim() || "I design and build thoughtful experiences.",
+    detail_heading_size: parseHeadingSize(formData.get("detail_heading_size")),
     updated_at: new Date().toISOString(),
   };
 
@@ -679,9 +681,19 @@ export async function saveProfile(
   }
 
   const profileId = payload.id || existingProfile?.id || crypto.randomUUID();
-  const { error } = await supabase
+  let { error } = await supabase
     .from("profile")
     .upsert({ ...payload, id: profileId }, { onConflict: "id" });
+
+  // Migration `detail_heading_size` belum dijalankan → kolom tidak dikenal DB.
+  // Simpan profil tanpa pengaturan ukuran heading supaya admin tidak gagal total.
+  if (error && (error.message ?? "").toLowerCase().includes("detail_heading_size")) {
+    const legacyPayload: Record<string, unknown> = { ...payload };
+    delete legacyPayload.detail_heading_size;
+    ({ error } = await supabase
+      .from("profile")
+      .upsert({ ...legacyPayload, id: profileId }, { onConflict: "id" }));
+  }
 
   if (error) {
     return { error: error.message || "Profil tidak dapat disimpan." };

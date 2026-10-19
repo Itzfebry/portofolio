@@ -1,5 +1,7 @@
 import { createPublicSupabaseClient } from "@/lib/supabase/public";
 
+export type HeadingSize = "normal" | "besar" | "ekstra";
+
 export type Profile = {
   name: string;
   role: string;
@@ -8,6 +10,8 @@ export type Profile = {
   bio: string;
   headline: string;
   avatar_url?: string;
+  /** Ukuran huruf heading `##`/`#` di halaman detail project. */
+  detail_heading_size: HeadingSize;
 };
 
 export type Skill = {
@@ -106,6 +110,7 @@ const DEFAULT_PROFILE: Profile = {
   email: "hello@example.com",
   bio: "Lulusan Manajemen Informatika dengan pengalaman dua tahun di bidang pengembangan web. Fokus pada pembuatan web app yang cepat, aksesibel, dan memiliki performa tinggi. Saya juga senang menulis artikel teknis dan berkontribusi di proyek open-source.",
   headline: "hello there!",
+  detail_heading_size: "besar",
 };
 
 const DEFAULT_SKILLS: Skill[] = [
@@ -229,9 +234,14 @@ function normalizeTechnologies(input: unknown): string[] {
   return [];
 }
 
+const HEADING_SIZES: HeadingSize[] = ["normal", "besar", "ekstra"];
+
+export function parseHeadingSize(value: unknown): HeadingSize {
+  return HEADING_SIZES.includes(value as HeadingSize) ? (value as HeadingSize) : "besar";
+}
+
 async function fetchDataFromSupabase(): Promise<PortfolioData | null> {
   const supabase = createPublicSupabaseClient();
-
   if (!process.env.NEXT_PUBLIC_SUPABASE_URL || !process.env.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY) {
     return null;
   }
@@ -270,6 +280,7 @@ async function fetchDataFromSupabase(): Promise<PortfolioData | null> {
         bio: String(profileRow.bio ?? DEFAULT_PROFILE.bio),
         headline: String(profileRow.headline ?? DEFAULT_PROFILE.headline),
         avatar_url: profileRow.avatar_url ?? DEFAULT_PROFILE.avatar_url,
+        detail_heading_size: parseHeadingSize(profileRow.detail_heading_size),
       },
       skills: (skillsResult.data ?? []).map((item: Record<string, unknown>) => ({
         id: String(item.id ?? crypto.randomUUID()),

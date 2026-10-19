@@ -14,6 +14,7 @@ type ProfileFormProps = {
     email: string;
     bio: string;
     headline: string;
+    detail_heading_size: "normal" | "besar" | "ekstra";
   };
 };
 
@@ -54,6 +55,19 @@ export function ProfileForm({ profile }: ProfileFormProps) {
       <label>
         <span className="mb-2 block text-sm text-zinc-300">Email</span>
         <input name="email" type="email" defaultValue={profile.email} className="w-full rounded-xl border border-zinc-700 bg-zinc-900 px-3 py-2.5 text-white outline-none focus:border-emerald-400" />
+      </label>
+      <label>
+        <span className="mb-2 block text-sm text-zinc-300">Ukuran judul detail project</span>
+        <select
+          name="detail_heading_size"
+          defaultValue={profile.detail_heading_size}
+          className="w-full rounded-xl border border-zinc-700 bg-zinc-900 px-3 py-2.5 text-white outline-none focus:border-emerald-400"
+        >
+          <option value="normal">Normal (semisal bold biasa)</option>
+          <option value="besar">Besar</option>
+          <option value="ekstra">Ekstra besar</option>
+        </select>
+        <span className="mt-1 block text-xs text-zinc-500">Mengatur ukuran huruf `##` di deskripsi detail halaman project.</span>
       </label>
       <label className="md:col-span-2">
         <span className="mb-2 block text-sm text-zinc-300">Judul utama</span>
