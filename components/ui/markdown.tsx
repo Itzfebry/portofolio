@@ -39,12 +39,15 @@ const HEADING_SCALE: Record<"normal" | "besar" | "ekstra", [string, string]> = {
   ekstra: ["text-2xl sm:text-3xl font-extrabold", "text-3xl sm:text-4xl font-extrabold"],
 };
 /** Tabel: wrap sel (overflow-wrap:anywhere) → muat di mobile tanpa keluar kartu. */
+/** Tabel: wrap sel (overflow-wrap:anywhere) → muat di mobile tanpa keluar kartu.
+ *  Garis kolom (border kanan) lebih tegas supaya grid antar kolom terbaca jelas. */
 const TABLE_WRAPPER = "max-w-full overflow-x-auto";
-const TABLE = "w-full table-fixed border-collapse text-left text-[.95rem]";
+const TABLE =
+  "w-full table-fixed border-collapse text-left text-[.95rem] border border-white/20";
 const TABLE_HEAD_CELL =
-  "border-b border-white/20 px-3 pb-2 align-top font-semibold text-zinc-50 [overflow-wrap:anywhere]";
+  "border-b border-white/25 border-r border-r-white/15 px-3 pb-2 align-top font-semibold text-zinc-50 [overflow-wrap:anywhere]";
 const TABLE_CELL =
-  "border-b border-white/8 px-3 py-2.5 align-top text-zinc-300 [overflow-wrap:anywhere]";
+  "border-b border-white/15 border-r border-r-white/10 px-3 py-2.5 align-top text-zinc-300 [overflow-wrap:anywhere]";
 
 function projectHeadingClass(base: string) {
   // `pb-1` memberi ruang kecil SETELAH heading (ruang sebelum tetap dari space-y-4).
