@@ -2,6 +2,7 @@
 
 import Image from "next/image";
 import { useCallback, useEffect, useRef, useState } from "react";
+import { createPortal } from "react-dom";
 import { ChevronLeft, ChevronRight, X } from "lucide-react";
 
 type ProjectGalleryProps = {
@@ -120,15 +121,16 @@ export default function ProjectGallery({ photos, ratios = [], title }: ProjectGa
         ))}
       </div>
 
-      {index !== null && (
-        <div
-          ref={dialogRef}
-          role="dialog"
-          aria-modal="true"
-          aria-label={`Foto ${index + 1} dari ${total} — ${title}`}
-          className="fixed inset-0 z-[100] flex items-center justify-center bg-black/90 p-4 backdrop-blur-sm"
-          onClick={close}
-        >
+      {index !== null &&
+        createPortal(
+          <div
+            ref={dialogRef}
+            role="dialog"
+            aria-modal="true"
+            aria-label={`Foto ${index + 1} dari ${total} — ${title}`}
+            className="fixed inset-0 z-[100] flex items-center justify-center bg-black/90 p-4 backdrop-blur-sm"
+            onClick={close}
+          >
           <button
             ref={closeRef}
             type="button"
@@ -182,8 +184,9 @@ export default function ProjectGallery({ photos, ratios = [], title }: ProjectGa
               {ratio ? ` · ${ratio}` : ""}
             </p>
           </div>
-        </div>
-      )}
+          </div>,
+          document.body,
+        )}
     </>
   );
 }
