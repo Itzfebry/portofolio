@@ -42,12 +42,19 @@ const DESCRIPTION =
  *  - `splash-skip` → menyembunyikan splash yang sudah ter-render di HTML SSR
  *                    lewat CSS, sehingga tidak ada flash splash lalu hilang.
  *
+ * Untuk kunjungan pertama, `is-entered` dijadwalkan lewat setTimeout (1080ms =
+ * DURATION 900 + HOLD 180, sinkron dengan `components/ui/splash-screen.tsx`)
+ * alih-alih menunggu React hydration memanggil markEntered(). Tanpa ini, hero
+ * ber-`opacity:0` (html:not(.is-entered)) sampai hydration selesai — di device
+ * lambat itu menunda LCP beberapa detik. markEntered() tetap dipanggil saat
+ * splash mulai keluar; penambahan class idempoten.
+ *
  * React tidak tahu-menahu soal class tambahan ini; `suppressHydrationWarning`
  * pada <html> di bawah mencegah React mempertanyakan mismatch kelas tersebut.
  */
-const splashGateScript = `(function(){try{if(sessionStorage.getItem(${JSON.stringify(
+const splashGateScript = `(function(){try{var h=document.documentElement,k=${JSON.stringify(
   SPLASH_SESSION_KEY,
-)})==="1"){var h=document.documentElement;h.classList.add("is-entered","splash-skip");}}catch(e){}})();`;
+)};if(sessionStorage.getItem(k)==="1"){h.classList.add("is-entered","splash-skip");return;}setTimeout(function(){h.classList.add("is-entered");},1080);}catch(e){}})();`;
 
 export const metadata: Metadata = {
   metadataBase: new URL(SITE_URL),

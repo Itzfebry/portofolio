@@ -30,6 +30,10 @@ yarn-debug.log*
 yarn-error.log*
 .pnpm-debug.log*
 
+# local perf runs (lighthouse reports + dev-server log)
+lh*.json
+start.log
+
 # env files (can opt-in for committing if needed)
 .env*
 

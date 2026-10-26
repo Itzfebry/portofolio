@@ -2,7 +2,7 @@
 
 import { useEffect, useRef, type CSSProperties } from "react";
 
-import { canvasDpr } from "@/lib/canvas-utils";
+import { canvasDpr, canvasFrameInterval, scheduleCanvasStart } from "@/lib/canvas-utils";
 
 export type GatewayFlowProps = {
   className?: string;
@@ -68,6 +68,13 @@ export default function GatewayFlow({
     /** false sampai canvas pertama terlihat — loop menyala malalui observer di bawah. */
     let inView = false;
     let dirty = true;
+    const frameInterval = canvasFrameInterval();
+    let lastDraw = 0;
+    let awakenStarted = false;
+    const awaken = () => {
+      if (animationFrame) return;
+      animationFrame = requestAnimationFrame(draw);
+    };
 
     const resize = () => {
       const bounds = canvas.getBoundingClientRect();
@@ -91,6 +98,12 @@ export default function GatewayFlow({
     };
 
     const draw = (time: number) => {
+      // Throttle ~30fps di touch: skip frame tanpa menghentikan loop.
+      if (!reducedMotion.matches && frameInterval > 0 && time - lastDraw < frameInterval) {
+        animationFrame = requestAnimationFrame(draw);
+        return;
+      }
+      lastDraw = time;
       const root = document.documentElement;
       // `is-scrolling` holds the last frame while the page is scrolling.
       // `is-hero-covered` holds it once the About sheet has fully covered the
@@ -158,7 +171,12 @@ export default function GatewayFlow({
     observer.observe(canvas);
     const visibility = new IntersectionObserver((entries) => {
       inView = entries.some((entry) => entry.isIntersecting);
-      if (inView && !animationFrame) {
+      if (inView && !animationFrame && !awakenStarted) {
+        // Defer frame pertama ke idle: jangan berebut main thread dengan
+        // hydration/LCP. Frame berikut menyusul dari loop draw.
+        awakenStarted = true;
+        scheduleCanvasStart(awaken);
+      } else if (inView && !animationFrame) {
         animationFrame = requestAnimationFrame(draw);
       }
     });

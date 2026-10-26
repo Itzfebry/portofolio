@@ -15,9 +15,9 @@ import { markEntered, markSplashSeen, hasSplashInSession } from "@/lib/entrance"
 /** `useLayoutEffect` memunculkan warning saat SSR; di server pakai `useEffect`. */
 const useIsoLayoutEffect = typeof window !== "undefined" ? useLayoutEffect : useEffect;
 
-const DURATION = 2400;
-const HOLD = 380;
-const EXIT = 760;
+const DURATION = 900;
+const HOLD = 180;
+const EXIT = 400;
 /** Jaring pengaman: kalau logika keluar gagal, hero tetap dilepas.
  *  Harus sinkron dengan `splash-safety 7s` di globals.css — jika beda,
  *  ada jeda di mana splash sudah tak terlihat tetapi scroll masih terkunci. */

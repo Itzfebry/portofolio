@@ -2,7 +2,7 @@
 
 import { useEffect, useRef } from "react";
 
-import { canvasDpr } from "@/lib/canvas-utils";
+import { canvasDpr, canvasFrameInterval, scheduleCanvasStart } from "@/lib/canvas-utils";
 
 type VortexBgProps = {
   className?: string;
@@ -127,6 +127,15 @@ export default function VortexBg({
      */
     let pausedAt = 0;
     let dirty = true;
+    /** Batas fps (0 = tanpa batas) supaya loop latar tidak membanjiri main thread di touch. */
+    const frameInterval = canvasFrameInterval();
+    let lastDraw = 0;
+    /** Penyalan pertama ditunda sampai idle; lihat penyala IntersectionObserver. */
+    let awakenStarted = false;
+    const awaken = () => {
+      if (frameRef.current) return;
+      frameRef.current = requestAnimationFrame(draw);
+    };
 
     const resize = () => {
       const rect = canvas.getBoundingClientRect();
@@ -147,6 +156,13 @@ export default function VortexBg({
 
     const draw = (time: number) => {
       frameRef.current = 0;
+
+      // Throttle ~30fps di touch: skip frame tanpa menghentikan loop.
+      if (!reduced && frameInterval > 0 && time - lastDraw < frameInterval) {
+        frameRef.current = requestAnimationFrame(draw);
+        return;
+      }
+      lastDraw = time;
 
       // Tahan frame saat scroll, atau saat hero sudah tertutup sheet About
       // (is-hero-covered): VortexBg dipasang di hero yang di-sticky, jadi meski
@@ -229,7 +245,12 @@ export default function VortexBg({
       if (next === inView) return;
       inView = next;
       // Penyala pertama: termasuk mode reduced-motion (satu frame statis).
-      if (inView && !frameRef.current) {
+      // Di-defer ke idle agar frame pertama tidak berkompetisi dengan
+      // hydration & cat pertama (LCP); frame berikut menyusul sendiri.
+      if (inView && !frameRef.current && !awakenStarted) {
+        awakenStarted = true;
+        scheduleCanvasStart(awaken);
+      } else if (inView && !frameRef.current) {
         frameRef.current = requestAnimationFrame(draw);
       }
     });
