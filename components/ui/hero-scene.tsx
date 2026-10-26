@@ -345,6 +345,9 @@ export default function HeroScene({ profile, socialLinks, stats }: HeroSceneProp
                 width={520}
                 height={780}
                 priority
+                quality={60}
+                placeholder="blur"
+                blurDataURL="data:image/jpeg;base64,iVBORw0KGgoAAAANSUhEUgAAAAgAAAAMCAYAAABfnvydAAAACXBIWXMAAAsSAAALEgHS3X78AAABl0lEQVQYlQGMAXP+AH9fXwh/Y0YSel5LG39fTyB7WkofdFVKGH9bSA5mMzMFAJFtWw6UalofkmxcL5FtWziSbFk2j2ldKYpqVRhxVVUJAJ15YRWkfGstpX9sRKR8bFKkfW1Po31sPaJ4aiScdWINAKeMex2ujHs8sIx+W7GOgG2wjn5rsI6CVLCOhDSmkIUXAK6TjCa0mYtLtpiNcLWZjoi1mo+Ht52SbrOelEq1oZomAKackTGwnJdbtKGXhbahm6G1pJyjt6Wfi7WmoWW0qKQ+AKOalj2pn5prraGcma+kn7mxpqK+s6qlqLOpp4OyqqddAJ2Zlkmhm5l7pZ+cq6mioc2rpaTVrqimwq6pp6Gvqad9AJqUlFSdmZmIoZ2duaWhodyopKLmqqal1qumprisp6WXAJqUlFudmpiQn52bwaOfn+Smo6LtqqWl3qmlo8SqpaSmAJmTll+cmZmUoZ2dxKSfn+anoqLuqKSk36ejosaooqKqAJmTlmKem5uXop6exqWhoeenoqLup6Oj3qejosOloZ+mQbnS0BojNHEAAAAASUVORK5CYII="
                 sizes="(max-width: 1024px) 70vw, 420px"
               />
             </div>

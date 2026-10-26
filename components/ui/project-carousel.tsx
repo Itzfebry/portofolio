@@ -43,7 +43,7 @@ export default function ProjectCarousel({ photos, title }: { photos: string[]; t
 
   if (total <= 1) {
     return photos[0] ? (
-      <Image src={photos[0]} alt={title} width={1280} height={800} sizes="100vw" />
+      <Image src={photos[0]} alt={title} width={1280} height={800} quality={60} sizes="100vw" />
     ) : null;
   }
 

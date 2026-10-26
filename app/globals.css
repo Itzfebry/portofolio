@@ -1605,7 +1605,8 @@ img { display: block; max-width: 100%; }
   border: 0;
   border-radius: 999px;
   background: rgba(255, 255, 255, .3);
-  transition: background .3s ease, width .3s ease;
+  transition: background .3s ease, transform .3s ease;
+  transform-origin: left center;
   cursor: pointer;
 }
 
@@ -1623,7 +1624,7 @@ img { display: block; max-width: 100%; }
 
 .project-card__carousel-dot.is-active {
   background: var(--cyan);
-  width: 1rem;
+  transform: scaleX(2.857);
 }
 
 .project-card__body { display: flex; flex-direction: column; flex: 1; padding: 1.25rem 1rem 1rem; }

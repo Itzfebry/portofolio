@@ -109,7 +109,7 @@ export default function CertificateCarousel({ items }: Props) {
                     item.preview_url ? (
                       // Preview JPEG halaman-1 — PDF tidak bisa dirender di
                       // <iframe> pada Chrome Android & Safari iOS.
-                      <Image src={item.preview_url} alt={item.title} width={1200} height={800} sizes="(max-width: 768px) 92vw, 720px" />
+                      <Image src={item.preview_url} alt={item.title} width={1200} height={800} quality={60} sizes="(max-width: 768px) 92vw, 720px" />
                     ) : (
                       <iframe
                         className="cert-card__frame"
@@ -119,7 +119,7 @@ export default function CertificateCarousel({ items }: Props) {
                       />
                     )
                   ) : (
-                    <Image src={item.file_url} alt={item.title} width={1200} height={800} sizes="(max-width: 768px) 92vw, 720px" />
+                    <Image src={item.file_url} alt={item.title} width={1200} height={800} quality={60} sizes="(max-width: 768px) 92vw, 720px" />
                   )}
                   <span className="cert-card__badge">{item.file_type === "pdf" ? "PDF" : "Sertifikat"}</span>
                 </div>

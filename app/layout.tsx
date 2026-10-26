@@ -110,6 +110,9 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
         {/* Preconnect diangkat React 19 ke <head>; kalau tidak, browser tetap
             memakainya — link preconnect sah berada di body. */}
         <link rel="preconnect" href="https://cdn.simpleicons.org" crossOrigin="" />
+        {process.env.NEXT_PUBLIC_SUPABASE_URL && (
+          <link rel="preconnect" href={process.env.NEXT_PUBLIC_SUPABASE_URL} crossOrigin="" />
+        )}
         {/* Gate splash: harus dieksekusi sinkron saat parse, SEBELUM markup
             splash/hero di bawahnya selesai di-parse — jadi sebelum paint
             pertama. Taruh di awal body, bukan memakai next/script

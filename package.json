@@ -2,6 +2,12 @@
   "name": "portofolio",
   "version": "0.1.0",
   "private": true,
+  "browserslist": [
+    "last 2 Chrome versions",
+    "last 2 Firefox versions",
+    "last 2 Safari versions",
+    "last 2 Edge versions"
+  ],
   "scripts": {
     "dev": "next dev",
     "build": "next build",
@@ -21,6 +27,7 @@
     "react-dom": "19.2.8"
   },
   "devDependencies": {
+    "@next/bundle-analyzer": "^16.4.3",
     "@tailwindcss/postcss": "^4",
     "@types/node": "^20",
     "@types/react": "^19",
