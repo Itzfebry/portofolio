@@ -120,6 +120,12 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
         {process.env.NEXT_PUBLIC_SUPABASE_URL && (
           <link rel="preconnect" href={process.env.NEXT_PUBLIC_SUPABASE_URL} crossOrigin="" />
         )}
+        {/* Preload the LCP hero image so it starts downloading before JS hydration */}
+        <link rel="preload" as="image" href="/_next/image?url=%2Fimages%2FFebry.png&w=1080&q=75" />
+        {/* Skip if env has explicit image URL override */}
+        {process.env.NEXT_PUBLIC_SUPABASE_URL && (
+          <link rel="preconnect" href={process.env.NEXT_PUBLIC_SUPABASE_URL} crossOrigin="" />
+        )}
         {/* Gate splash: harus dieksekusi sinkron saat parse, SEBELUM markup
             splash/hero di bawahnya selesai di-parse — jadi sebelum paint
             pertama. Taruh di awal body, bukan memakai next/script

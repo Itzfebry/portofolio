@@ -189,6 +189,9 @@ export default function GatewayFlow({
       observer.disconnect();
       visibility.disconnect();
       cancelAnimationFrame(animationFrame);
+      // Yield the current thread so the browser can process any pending
+      // hydration/tasks before the next rAF commit.
+      setTimeout(() => {}, 0);
     };
   }, [density, opacity, speed, strokeWidth]);
 

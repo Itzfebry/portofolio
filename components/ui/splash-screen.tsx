@@ -254,7 +254,12 @@ export default function OpeningScreen() {
     // Jaring pengaman: splash sendiri disembunyikan CSS setelah 7s, jadi hero
     // juga harus dilepas kalaupun logika keluar di SplashScreen tidak jalan.
     const backstop = window.setTimeout(markEntered, BACKSTOP);
-    return () => window.clearTimeout(backstop);
+    return () => {
+      window.clearTimeout(backstop);
+      // Yield the current thread so the browser can process any pending
+      // hydration/tasks before the next rAF commit.
+      setTimeout(() => {}, 0);
+    };
   }, []);
 
   if (skip || done) return null;

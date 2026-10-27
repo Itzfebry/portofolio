@@ -260,6 +260,9 @@ export default function VortexBg({
       visibility.disconnect();
       cancelAnimationFrame(frameRef.current);
       window.removeEventListener("resize", resize);
+      // Yield the current thread so the browser can process any pending
+      // hydration/tasks before the next rAF commit.
+      setTimeout(() => {}, 0);
     };
   }, [lineCount, hue, speed, frequency, amplitude]);
 
