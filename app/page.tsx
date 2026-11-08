@@ -429,12 +429,7 @@ export default async function Home() {
                     </Reveal>
 
                     <Reveal delay={250} y={20}>
-                      <p className="contact-status">
-                        <span className="contact-status__emoji" aria-hidden="true">
-                          🟢
-                        </span>
-                        Available for work
-                      </p>
+                      <p className="contact-status">Available for work</p>
                     </Reveal>
                   </div>
 

@@ -16,7 +16,7 @@ import type { Profile, SocialLink } from "@/lib/portfolio-data";
 type Stat = { value: string; label: string };
 
 const ROLE_TEXT = "Junior Web & Mobile Developer";
-const WHATSAPP_URL = "https://wa.me/6287786445013";
+const WHATSAPP_URL = "https://wa.me/6287776445013";
 
 type HeroSceneProps = {
   profile: Profile;

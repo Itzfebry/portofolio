@@ -109,7 +109,7 @@ const DEFAULT_PROFILE: Profile = {
   location: "Bondowoso, Indonesia",
   email: "hello@example.com",
   bio: "Lulusan Manajemen Informatika dengan pengalaman dua tahun di bidang pengembangan web. Fokus pada pembuatan web app yang cepat, aksesibel, dan memiliki performa tinggi. Saya juga senang menulis artikel teknis dan berkontribusi di proyek open-source.",
-  headline: "hello there!",
+  headline: "[ hello there! ]",
   detail_heading_size: "besar",
 };
 
