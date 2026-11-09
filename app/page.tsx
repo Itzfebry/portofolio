@@ -1,9 +1,9 @@
 /* eslint-disable @next/next/no-img-element */
-import { Mail, Share2 } from "lucide-react";
+import { Share2 } from "lucide-react";
 import Image from "next/image";
 import Link from "next/link";
 
-import { GithubIcon, InstagramIcon, LinkedinIcon } from "@/components/ui/brand-icons";
+import { GithubIcon, GmailIcon, InstagramIcon, LinkedinIcon } from "@/components/ui/brand-icons";
 import HeroScene from "@/components/ui/hero-scene";
 import LiquidGlassShell from "@/components/ui/liquid-glass-shell";
 import ProjectCarousel from "@/components/ui/project-carousel";
@@ -437,7 +437,7 @@ export default async function Home() {
                     <Reveal delay={220} y={24}>
                       <div className="contact-card">
                         <span className="contact-card__icon" aria-hidden="true">
-                          <Mail size={18} strokeWidth={1.8} />
+                          <GmailIcon size={18} />
                         </span>
                         <div className="contact-card__body">
                           <p className="contact-card__label">EMAIL</p>

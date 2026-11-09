@@ -1742,18 +1742,22 @@ img { display: block; max-width: 100%; }
 .contact-status {
   display: inline-flex;
   align-items: center;
-  gap: .6rem;
+  gap: .55rem;
   margin-top: 1.7rem;
-  padding: .6rem 1.1rem;
-  border: 2px solid #052e1f;
-  border-radius: 0;
-  background: #a7f3d0;
-  font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
-  font-weight: 800;
-  letter-spacing: .06em;
-  text-transform: uppercase;
-  color: #052e1f;
-  box-shadow: 5px 5px 0 rgba(0,0,0,.85);
+  padding: .4rem .9rem;
+  border: 1px solid rgba(103, 232, 249, .3);
+  border-radius: 999px;
+  background: rgba(103, 232, 249, .08);
+  font-size: .82rem;
+  font-weight: 600;
+  letter-spacing: .02em;
+  color: rgba(224, 242, 254, .9);
+}
+
+.contact-status::before {
+  content: "✅";
+  font-size: .9rem;
+  line-height: 1;
 }
 
 .contact-cards { display: grid; gap: 1rem; }

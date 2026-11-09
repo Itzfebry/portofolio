@@ -243,11 +243,6 @@ export default function HeroScene({ profile, socialLinks, stats }: HeroSceneProp
 
       <div className="hero__grid">
         <div className="hero__copy">
-          <p className="hero__eyebrow hero-anim" style={{ "--d": "0.1s" } as CSSProperties}>
-            <span className="pulse-dot" aria-hidden="true" />
-            {profile.headline || profile.role}
-          </p>
-
           <h1 className="hero__title">
             <span className="hero__line" style={{ "--base": "0.16s" } as CSSProperties}>
               <LineChars text={firstName} />
