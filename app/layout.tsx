@@ -59,7 +59,7 @@ const splashGateScript = `(function(){try{var h=document.documentElement,k=${JSO
 export const metadata: Metadata = {
   metadataBase: new URL(SITE_URL),
   title: {
-    default: "ItzFebryHcx | Portofolio — Mochammad Ginata Febryansyah",
+    default: "ItzFebryHcx | Portofolio | Mochammad Ginata Febryansyah",
     template: "%s | ItzFebryHcx",
   },
   description: DESCRIPTION,

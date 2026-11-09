@@ -13,7 +13,7 @@ export const revalidate = 300;
 export const metadata: Metadata = {
   title: "Projects",
   description:
-    "Kumpulan project Mochammad Ginata Febryansyah — setiap project punya halaman detail sendiri.",
+    "Kumpulan project Mochammad Ginata Febryansyah, setiap project punya halaman detail sendiri.",
   alternates: {
     canonical: "/project",
   },
