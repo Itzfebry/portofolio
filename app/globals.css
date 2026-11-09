@@ -1764,8 +1764,8 @@ img { display: block; max-width: 100%; }
 
 .contact-card {
   display: flex;
-  align-items: flex-start;
-  gap: 1rem;
+  flex-direction: column;
+  gap: .85rem;
   padding: 1.4rem 1.45rem;
   border: 1px solid rgba(255, 255, 255, .1);
   border-radius: 1.5rem;
@@ -1778,6 +1778,14 @@ img { display: block; max-width: 100%; }
     background .45s ease,
     box-shadow .55s var(--ease);
 }
+
+.contact-card__row {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+}
+
+.contact-card__row--start { align-items: flex-start; }
 
 .contact-card:hover {
   transform: translateY(-4px);
@@ -1825,7 +1833,6 @@ img { display: block; max-width: 100%; }
 
 .contact-card__value {
   display: inline-block;
-  margin-top: .5rem;
   max-width: 100%;
   overflow-wrap: anywhere;
   font-size: clamp(1rem, 2.4vw, 1.2rem);
@@ -1847,7 +1854,6 @@ img { display: block; max-width: 100%; }
   display: flex;
   flex-wrap: wrap;
   gap: .55rem;
-  margin-top: .75rem;
 }
 
 .contact-social {

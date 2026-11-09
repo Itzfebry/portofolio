@@ -3,7 +3,7 @@ import { Share2 } from "lucide-react";
 import Image from "next/image";
 import Link from "next/link";
 
-import { GithubIcon, GmailIcon, InstagramIcon, LinkedinIcon } from "@/components/ui/brand-icons";
+import { GithubIcon, GmailIcon, InstagramIcon, LinkedinIcon, WhatsappIcon } from "@/components/ui/brand-icons";
 import HeroScene from "@/components/ui/hero-scene";
 import LiquidGlassShell from "@/components/ui/liquid-glass-shell";
 import ProjectCarousel from "@/components/ui/project-carousel";
@@ -68,11 +68,13 @@ export default async function Home() {
       label: "GitHub",
       url: findSocial("GitHub")?.url ?? "https://github.com/Itzfebry",
       Icon: GithubIcon,
+      color: "#ffffff",
     },
     {
       label: "Instagram",
       url: findSocial("Instagram")?.url ?? "https://www.instagram.com/mginatafebry_",
       Icon: InstagramIcon,
+      color: undefined as string | undefined,
     },
     {
       label: "LinkedIn",
@@ -80,6 +82,13 @@ export default async function Home() {
         findSocial("LinkedIn")?.url ??
         "https://www.linkedin.com/in/mochammad-ginata-febryansyah-29708337a/",
       Icon: LinkedinIcon,
+      color: "#0A66C2",
+    },
+    {
+      label: "WhatsApp",
+      url: "https://wa.me/6287776445013",
+      Icon: WhatsappIcon,
+      color: "#25D366",
     },
   ];
 
@@ -436,11 +445,11 @@ export default async function Home() {
                   <div className="contact-cards">
                     <Reveal delay={220} y={24}>
                       <div className="contact-card">
-                        <span className="contact-card__icon" aria-hidden="true">
-                          <GmailIcon size={18} />
-                        </span>
-                        <div className="contact-card__body">
-                          <p className="contact-card__label">EMAIL</p>
+                        <p className="contact-card__label">EMAIL</p>
+                        <div className="contact-card__row">
+                          <span className="contact-card__icon" aria-hidden="true">
+                            <GmailIcon size={18} />
+                          </span>
                           <a
                             className="contact-card__value"
                             href={`mailto:${data.profile.email}`}
@@ -453,16 +462,16 @@ export default async function Home() {
 
                     <Reveal delay={310} y={24}>
                       <div className="contact-card">
-                        <span
-                          className="contact-card__icon contact-card__icon--violet"
-                          aria-hidden="true"
-                        >
-                          <Share2 size={18} strokeWidth={1.8} />
-                        </span>
-                        <div className="contact-card__body">
-                          <p className="contact-card__label">TERHUBUNG</p>
+                        <p className="contact-card__label">TERHUBUNG</p>
+                        <div className="contact-card__row contact-card__row--start">
+                          <span
+                            className="contact-card__icon contact-card__icon--violet"
+                            aria-hidden="true"
+                          >
+                            <Share2 size={18} strokeWidth={1.8} />
+                          </span>
                           <div className="contact-socials">
-                            {contactSocials.map(({ label, url, Icon }) => (
+                            {contactSocials.map(({ label, url, Icon, color }) => (
                               <a
                                 key={label}
                                 href={url}
@@ -471,7 +480,7 @@ export default async function Home() {
                                 className="contact-social"
                               >
                                 <span className="contact-social__icon" aria-hidden="true">
-                                  <Icon size={15} />
+                                  <Icon size={15} color={color} />
                                 </span>
                                 {label}
                                 <ArrowUpRight className="contact-social__arrow h-3.5 w-3.5" />
